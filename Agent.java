@@ -11,54 +11,67 @@ import java.net.*;
 
 public class Agent {
 
-	public static char[] options = {'F', 'L', 'R', 'C', 'B'};
+	public static final char[] options = {'f', 'l', 'r', 'c', 'b'}; 
+		//lowercase because avoiding conflicts
 	
+	public static final char[] fieldIcons = {'T', 'a', '*', '~', 'd', 'B', 'g'};
+		//T = tree, a = axe, * = wall, d = dynamite, ~ = water, B = boat, g = gold
+	
+	public static final char[] otherIcons = {'h'}; //defined by us
+		//h = home, can't think of any more
+	
+	//suggested variables (i.e. variables that Bounty keeps as well)
+	public boolean hasAxe;
+	public boolean haskey;
+	public boolean hasGold;
+	public boolean inBoat;
+	public int numBombs;
+	
+	//variables we might need that are guesses:
+	public int orientation; //or something to know which direction we are facing
+	public Cell[] grid; //the map (size to be determined)
+	
+	public int moveCount; //just really for debugging
+	
+	Agent() {
+		moveCount = 0;
+		numBombs = 0;
+	}
 	
 	//our method
 	public char get_action(char view[][]) {
-
+		moveCount++;
+		System.out.println(moveCount);
+		
+		/*//comment out this line for slowed play
 		try {
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
+//		*/
 		
 		Random rand = new Random(); //a random moving ai.
 		
-		return options[rand.nextInt(options.length)];
-		
-		/*
-		int ch = 0;
-
-		System.out.print("Enter Action(s): ");
-
-		try {
-			while (ch != -1) {
-				// read character from keyboard
-				ch = System.in.read();
-
-				switch (ch) { // if character is a valid action, return it
-				case 'F':
-				case 'L':
-				case 'R':
-				case 'C':
-				case 'B':
-				case 'f':
-				case 'l':
-				case 'r':
-				case 'c':
-				case 'b':
-					return ((char) ch);
-				}
+		char c = 0;
+		while (true) {
+			c = options[rand.nextInt(options.length)];
+			if (c =='f' && view[1][2] == '~') {
+				//its water don't move there
+			} else {
+				break;
 			}
-		} catch (IOException e) {
-			System.out.println("IO error:" + e);
 		}
-
-		return 0; */
+		
+		
+		return c;
 	}
 	
 	
+	class Cell {		
+		char type;
+		//maybe put the search weight code here?
+	}
 	
 	//////////////////////////////////////////////////////////////////
 	//Don't touch below
@@ -71,7 +84,7 @@ public class Agent {
 			System.out.print("|");
 			for (j = 0; j < 5; j++) {
 				if ((i == 2) && (j == 2)) {
-					System.out.print('^');
+					System.out.print('^'); //player is always at 2,2; f would go to 1,2 
 				} else {
 					System.out.print(view[i][j]);
 				}

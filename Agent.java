@@ -12,7 +12,8 @@ import java.net.*;
 
 public class Agent {
 
-	public static final char[] options = {'f', 'l', 'r', 'c', 'b'}; 
+	public static final char[] options = {'f', 'l', 'r'};//, 'c', 'b'}; TODO add them as options
+		//f = forward, l = rotate left, r = rotate right, c = chop, b = bomb
 		//lowercase because avoiding conflicts
 	
 	public static final char[] fieldIcons = {'T', 'a', '*', '~', 'd', 'B', 'g'};
@@ -30,8 +31,15 @@ public class Agent {
 	
 	//variables we might need that are guesses:
 	public int orientation; //or something to know which direction we are facing
+		//0 = up, 1 = right, 2 = down, 3 = left  (so clockwise)
+		//starts on 0, so the inital direction is up
+	public Point position;
 	
-	public final int MAX_SIZE = 161;
+	
+	public final int MAX_SIZE = 61; //TODO change back to 161, 
+		//suggesting change to 80*2 + 1 + 4 = 165
+		//because we can also see 2 more squares than that
+	
 	public char grid[][]; //the map (size to be determined)
 	
 	public int moveCount; //just really for debugging
@@ -39,9 +47,10 @@ public class Agent {
 	Agent() {
 		moveCount = 0;
 		numBombs = 0;
+		orientation = 0;
+		position = new Point(MAX_SIZE/2, MAX_SIZE/2); //should be floor be 80 if MAX_SIZE = 161
 		
 		grid = new char[MAX_SIZE][MAX_SIZE];
-		
 		for (int i = 0; i < MAX_SIZE; i++) {
 			for (int j = 0; j < MAX_SIZE; j++) {
 				grid[i][j] = '?'; //set it all to unknown
@@ -51,8 +60,6 @@ public class Agent {
 	
 	//our method
 	public char get_action(char view[][]) {
-		moveCount++;
-		System.out.println(moveCount);
 		/*comment out this line for slowed play
 		try {
 			Thread.sleep(100);
@@ -60,6 +67,20 @@ public class Agent {
 			e.printStackTrace();
 		}
 //		*/
+
+		//move the incoming view so we can interperet it
+			//by doing this we are making all our variables compared to global position
+		switch(orientation) {
+//		case 0: //is doing nothing with its life..; break;
+		case 1: view = rotateMatrixRight(view); break;
+		case 2: view = rotateMatrixLeft(view); view = rotateMatrixLeft(view); break;
+		case 3: view = rotateMatrixLeft(view); break;
+		}
+		//fill in grid.
+		fillGrid(view);
+		print_view(grid);
+//		char temp = getInfrontChar(view);
+//		System.out.println("'" + temp + "', or: " + orientation + ", pos: " + position.x + "|" + position.y);
 		
 		/* Possible Movement Logic?:
 		 * 
@@ -76,24 +97,71 @@ public class Agent {
 		 *   try use bombs
 		 */
 		
-		
 		Random rand = new Random(); //a random moving ai.
 		
 		char c = 0;
 		while (true) {
 			c = options[rand.nextInt(options.length)];
-			if (c =='f' && view[1][2] == '~') {
-				//its water don't move there
-			} else if (c=='f' && view[1][2] == '*') {
-			
+			if (c =='f' && getInfrontChar(view) == 'T') {
+			} else if (c == 'f' && getInfrontChar(view) == '*') {
+			} else if (c == 'f' && getInfrontChar(view) == '~') {
 			} else {
 				break;
 			}
 		}
+
 		
+		//finishing code to save the state to use next time
+		switch(c) {
+		case 'l': orientation--; break; //think right to up which is 1 to 0
+		case 'r': orientation++; break; //think up to right which is 0 to 1
+		case 'f':
+			char ni = getInfrontChar(view);
+			if (ni == 'T' || ni == '*' || ni == '~') break; //don't move
+			
+			switch(orientation) { //use your brain as left and up are the positive direction
+			case 0: position.y--; break;
+			case 1: position.x++; break;
+			case 2: position.y++; break;
+			case 3: position.x--; break;
+			}
+			break;
+		}
+		
+		if (orientation < 0) orientation = 3;
+		if (orientation > 3) orientation = 0;
+		
+		moveCount++;
+		System.out.println("chose: " + c + ", count: " + moveCount);
 		return c;
 	}
 	
+	private char getInfrontChar(char view[][]) {
+		switch(orientation) { //use your brain as left and up are the positive direction
+		case 0: return view[1][2]; //middle is [2][2]
+		case 1: return view[2][3];
+		case 2: return view[3][2];
+		case 3: return view[2][1];
+		}
+		return '?';
+	}
+	
+	private void fillGrid(char[][] view) {
+		int x = position.x;
+		int y = position.y;
+		
+		for (int i = 0; i < 5; i++) {
+			for (int j = 0; j < 5; j++) {
+				grid[y+i-2][x+j-2] = view[i][j]; //TODO check this actually works
+			}
+		}
+		
+		grid[y][x] = '#'; //player
+		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home
+	}
+
+
+
 	//Priority queue node
 	class QueueNode<E> implements Comparable<QueueNode<E>> {
 		QueueNode<E> parent;
@@ -177,12 +245,10 @@ public class Agent {
 	
 	//found on the internets
 	//http://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
-	/*
-	public int[][] rotateMatrixRight(int[][] matrix) {
-	    // W and H are already swapped
-	    int w = matrix.length;
+	public char[][] rotateMatrixRight(char[][] matrix) {
+	    int w = matrix.length; // W and H are already swapped
 	    int h = matrix[0].length;
-	    int[][] ret = new int[h][w];
+	    char[][] ret = new char[h][w];
 	    for (int i = 0; i < h; ++i) {
 	        for (int j = 0; j < w; ++j) {
 	            ret[i][j] = matrix[w - j - 1][i];
@@ -191,12 +257,10 @@ public class Agent {
 	    return ret;
 	}
 	
-	
-	public int[][] rotateMatrixLeft(int[][] matrix) {
-	    // W and H are already swapped
-	    int w = matrix.length;
+	public char[][] rotateMatrixLeft(char[][] matrix) {
+	    int w = matrix.length; // W and H are already swapped
 	    int h = matrix[0].length;   
-	    int[][] ret = new int[h][w];
+	    char[][] ret = new char[h][w];
 	    for (int i = 0; i < h; ++i) {
 	        for (int j = 0; j < w; ++j) {
 	            ret[i][j] = matrix[j][h - i - 1];
@@ -204,19 +268,17 @@ public class Agent {
 	    }
 	    return ret;
 	}
-	 */
 	
 	
 	//////////////////////////////////////////////////////////////////
 	//Don't touch below
 
 	void print_view(char view[][]) {
-		int i, j;
-
+		
 		System.out.println("\n+-----+");
-		for (i = 0; i < 5; i++) {
+		for (int i = 0; i < view.length; i++) {
 			System.out.print("|");
-			for (j = 0; j < 5; j++) {
+			for (int j = 0; j < view[0].length; j++) {
 				if ((i == 2) && (j == 2)) {
 					System.out.print('^'); //player is always at 2,2; f would go to 1,2 
 				} else {
@@ -268,8 +330,7 @@ public class Agent {
 						}
 					}
 				}
-				agent.print_view(view); // COMMENT THIS OUT BEFORE SUBMISSION,
-										// TODO please
+//				agent.print_view(view); // TODO COMMENT THIS OUT BEFORE SUBMISSION,
 				action = agent.get_action(view);
 				out.write(action);
 			}

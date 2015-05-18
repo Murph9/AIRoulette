@@ -6,6 +6,7 @@
  */
 
 import java.util.*;
+import java.awt.Point;
 import java.io.*;
 import java.net.*;
 
@@ -17,8 +18,8 @@ public class Agent {
 	public static final char[] fieldIcons = {'T', 'a', '*', '~', 'd', 'B', 'g'};
 		//T = tree, a = axe, * = wall, d = dynamite, ~ = water, B = boat, g = gold
 	
-	public static final char[] otherIcons = {'h'}; //defined by us
-		//h = home, can't think of any more
+	public static final char[] otherIcons = {'h', '?'}; //defined by us
+		//h = home, ? - known space, any more?
 	
 	//suggested variables (i.e. variables that Bounty keeps as well)
 	public boolean hasAxe;
@@ -29,27 +30,52 @@ public class Agent {
 	
 	//variables we might need that are guesses:
 	public int orientation; //or something to know which direction we are facing
-	public Cell[] grid; //the map (size to be determined)
+	
+	public final int MAX_SIZE = 161;
+	public char grid[][]; //the map (size to be determined)
 	
 	public int moveCount; //just really for debugging
 	
 	Agent() {
 		moveCount = 0;
 		numBombs = 0;
+		
+		grid = new char[MAX_SIZE][MAX_SIZE];
+		
+		for (int i = 0; i < MAX_SIZE; i++) {
+			for (int j = 0; j < MAX_SIZE; j++) {
+				grid[i][j] = '?'; //set it all to unknown
+			}
+		}
 	}
 	
 	//our method
 	public char get_action(char view[][]) {
 		moveCount++;
 		System.out.println(moveCount);
-		
-		/*//comment out this line for slowed play
+		/*comment out this line for slowed play
 		try {
 			Thread.sleep(100);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 //		*/
+		
+		/* Possible Movement Logic?:
+		 * 
+		 * if got goal go home
+		 * try for goal
+		 * if item 
+		 *   pick it up
+		 * else if something like, check for unexplored areas
+		 *   follow edge
+		 *   fill in holes
+		 * else
+		 *   try use axe
+		 *   try use boat
+		 *   try use bombs
+		 */
+		
 		
 		Random rand = new Random(); //a random moving ai.
 		
@@ -58,20 +84,128 @@ public class Agent {
 			c = options[rand.nextInt(options.length)];
 			if (c =='f' && view[1][2] == '~') {
 				//its water don't move there
+			} else if (c=='f' && view[1][2] == '*') {
+			
 			} else {
 				break;
 			}
 		}
 		
-		
 		return c;
 	}
 	
-	
-	class Cell {		
-		char type;
-		//maybe put the search weight code here?
+	//Priority queue node
+	class QueueNode<E> implements Comparable<QueueNode<E>> {
+		QueueNode<E> parent;
+		E e;
+		double weight; //although its probably an int
+		QueueNode (QueueNode<E> parent, E e, double weight) {
+			this.parent = parent;
+			this.e = e;
+			this.weight = weight;
+		}
+		
+		@Override
+		public int compareTo(QueueNode<E> arg0) {
+			if (this.weight <= arg0.weight) {
+				return -1;
+			}
+			return 1;
+		}
 	}
+	
+	//will require some kind of convert to action sequence
+		//note that it uses the java.awt.Point class which contains 2 ints
+	//
+	public LinkedList<Point> aStar(Point start, Point dest) {
+		PriorityQueue<QueueNode<Point>> pq = new PriorityQueue<QueueNode<Point>>();
+		
+		HashSet<QueueNode<Point>> seen = new HashSet<QueueNode<Point>>();
+		
+		QueueNode<Point> popped = null;
+		Point curPoint = null;
+		
+		pq.add(new QueueNode<Point>(null, start, 0+0));
+		while (!pq.isEmpty()) {
+			popped = pq.poll();
+			curPoint = popped.e;
+			
+			if (!seen.contains(popped)) {
+				seen.add(popped);
+			}
+			
+			if (curPoint.equals(dest)) { //we are done here
+				break;
+			} else {
+				for (Point p : getNeightbours(curPoint)) {
+					if (!seen.contains(p)) {
+						pq.add(new QueueNode<Point>(popped, p, 0));
+					}
+				}
+			}
+		}
+
+		LinkedList<Point> trail = new LinkedList<Point>();
+		QueueNode<Point> cur = popped;
+		while(cur != null) {
+			trail.addFirst(cur.e);
+			cur = cur.parent;	
+		}
+		
+		return trail;
+	}
+	
+	//gets the neighbours
+	private LinkedList<Point> getNeightbours(Point in) {
+		LinkedList<Point> out = new LinkedList<Point>();
+	
+		if (isInside(in.x+1, in.y)) out.add(new Point(in.x+1,in.y));
+		if (isInside(in.x-1, in.y))	out.add(new Point(in.x-1,in.y));
+		
+		if (isInside(in.x, in.y+1))	out.add(new Point(in.x,in.y+1));
+		if (isInside(in.x, in.y-1))	out.add(new Point(in.x,in.y-1));
+		
+		return out;
+	}
+	
+	//simple checker
+	private boolean isInside(int x, int y) {
+		if (x > MAX_SIZE || x < 0) return false;
+		if (y > MAX_SIZE || y < 0) return false;
+		return true;
+	}
+	
+	//found on the internets
+	//http://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
+	/*
+	public int[][] rotateMatrixRight(int[][] matrix) {
+	    // W and H are already swapped
+	    int w = matrix.length;
+	    int h = matrix[0].length;
+	    int[][] ret = new int[h][w];
+	    for (int i = 0; i < h; ++i) {
+	        for (int j = 0; j < w; ++j) {
+	            ret[i][j] = matrix[w - j - 1][i];
+	        }
+	    }
+	    return ret;
+	}
+	
+	
+	public int[][] rotateMatrixLeft(int[][] matrix) {
+	    // W and H are already swapped
+	    int w = matrix.length;
+	    int h = matrix[0].length;   
+	    int[][] ret = new int[h][w];
+	    for (int i = 0; i < h; ++i) {
+	        for (int j = 0; j < w; ++j) {
+	            ret[i][j] = matrix[j][h - i - 1];
+	        }
+	    }
+	    return ret;
+	}
+	 */
+	
 	
 	//////////////////////////////////////////////////////////////////
 	//Don't touch below

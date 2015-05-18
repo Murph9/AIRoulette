@@ -100,7 +100,7 @@ public class Agent {
                   }
                }
             }
-            agent.print_view( view ); // COMMENT THIS OUT BEFORE SUBMISSION
+            agent.print_view( view ); // COMMENT THIS OUT BEFORE SUBMISSION, TODO please
             action = agent.get_action( view );
             out.write( action );
          }

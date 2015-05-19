@@ -23,10 +23,10 @@ public class Agent {
 		//h = home, ? - unknown, any more?
 	
 	//suggested variables (i.e. variables that Bounty keeps as well)
-	public boolean hasAxe;
-	public boolean haskey;
-	public boolean inBoat;
-	public int numBombs;
+	public static boolean hasAxe;
+	public static boolean haskey;
+	public static boolean inBoat;
+	public static int numBombs;
 	
 	public boolean hasGold;
 	public Point goldPos;
@@ -35,12 +35,12 @@ public class Agent {
 	public int orientation; //or something to know which direction we are facing
 		//0 = up, 1 = right, 2 = down, 3 = left  (so clockwise)
 		//starts on 0, so the inital direction is up
-	public Point position; //current position of the agent
+	public static Point pos; //current position of the agent
 	
-	public final int MAX_SIZE = 51; //TODO change back to 161, 
+	public static final int MAX_SIZE = 61; //TODO change back to 161, 
 		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port)
 	
-	public char grid[][]; //the map (size to be determined)
+	public static char grid[][]; //the map (size to be determined)
 	
 	public int moveCount; //just really for debugging
 	
@@ -49,7 +49,7 @@ public class Agent {
 		numBombs = 0;
 		orientation = 0;
 		goldPos = null;
-		position = new Point(MAX_SIZE/2, MAX_SIZE/2); //should = 80 if (MAX_SIZE == 161)
+		pos = new Point(MAX_SIZE/2, MAX_SIZE/2); //should = 80 if (MAX_SIZE == 161)
 		
 		grid = new char[MAX_SIZE][MAX_SIZE];
 		for (int i = 0; i < MAX_SIZE; i++) {
@@ -57,13 +57,14 @@ public class Agent {
 				grid[i][j] = '?'; //set it all to unknown
 			}
 		}
+		grid[pos.y][pos.x] = 'H'; //home character :)
 	}
 	
 	//our method
 	public char get_action(char view[][]) {
-		/*comment out this line for slowed play
+//		/*comment out this line for slowed play
 		try {
-			Thread.sleep(100);
+			Thread.sleep(50);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -74,16 +75,53 @@ public class Agent {
 		switch(orientation) {
 //		case 0: //is doing nothing with its life..; break;
 		case 1: 
-			view = rotateMatrixRight(view); break;
+			view = Help.rotateMatrixRight(view); break;
 		case 2: 
-			view = rotateMatrixLeft(view); 
-			view = rotateMatrixLeft(view); break;
+			view = Help.rotateMatrixLeft(view); 
+			view = Help.rotateMatrixLeft(view); break;
 		case 3: 
-			view = rotateMatrixLeft(view); break;
+			view = Help.rotateMatrixLeft(view); break;
 		}
-		fillGrid(view); //fill in grid.
-//		print_view(grid);
 		
+		fillGrid(view); //fill in grid.
+		print(grid);
+		char c = computeAction(); //important part
+		
+		char in = getInfrontChar(); //override the computed action if we are facing a tree with an axe
+		if (in == 'T' && hasAxe == true) c = 'c';
+		
+		//finishing code to save the state to use next time
+		switch(c) {
+		case 'l': orientation--; break; //think right to up which is 1 to 0
+		case 'r': orientation++; break; //think up to right which is 0 to 1
+		case 'f':
+			char ni = getInfrontChar();
+			if (ni == 'T' || ni == '*' || ni == '~') break; //we won't move so don't change the agent pos
+			if (ni == 'g') hasGold = true;
+			if (ni == 'a') hasAxe = true;
+			if (ni == 'b') numBombs++;
+			
+			switch(orientation) { //use your brain as left and down are the positive directions (its a grid)
+			case 0: pos.y--; break;
+			case 1: pos.x++; break;
+			case 2: pos.y++; break;
+			case 3: pos.x--; break;
+			}
+			break;
+		case 'b':
+			numBombs--; break;
+		}
+		
+		if (orientation < 0) orientation = 3;
+		if (orientation > 3) orientation = 0;
+		
+		moveCount++;
+		System.out.println("Chose: " + c + ", Infront '" + getInfrontChar() +"', Move counter: " + moveCount);
+		return c;
+	}
+	
+	//the meat of the code
+	private char computeAction() {
 		/* Possible Movement Logic?:
 		 * 
 		 * if got goal go home
@@ -99,23 +137,46 @@ public class Agent {
 		 *   try use bombs
 		 */
 		
-		//try for goal
-		if (goldPos != null) { //we have seen it
-			System.out.println("we see it");
-			if (/*path from here to gold*/true) {
-				//go to it
-			}
-			
-			if (position.x == goldPos.x && position.y == goldPos.y) {
-				hasGold = true;
-				System.out.println("we have it");
-			}
-		}
+
 		if (hasGold) { //then go home
-			System.out.println("We are going home");
 			//get move then return
+			
+			LinkedList<Point> trail = Help.bfs4Char('H');
+			Point p = trail.get(1);
+			System.out.println("Have gold, going home, " + pos.x + "|" + pos.y +", " + trail);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
 		}
 		
+		//try for goal
+		if (goldPos != null) { //we have seen it
+			//TODO needs check if can reach goal
+			LinkedList<Point> trail = Help.bfs4Char('g');
+			Point p = trail.get(1);
+			System.out.println("Know gold exists, " + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+		}
+		
+		if (hasAxe && gridContains('T')) { //TODO gets lost on looking for 'T'
+			LinkedList<Point> trail = Help.bfs4Char('T');
+			Point p = trail.get(1);
+			System.out.println("Have axe on route to T, " + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+		}
 		
 		//if can see an item try to go to it
 		//else if can explore some reachable '?'
@@ -124,240 +185,126 @@ public class Agent {
 			//try boat
 			//try bombs
 		
-		Random rand = new Random(); //a random moving ai...
-		
-		char c = 0;
-		while (true) {
-			c = options[rand.nextInt(options.length)];
-			if (c =='f' && getInfrontChar(view) == 'T') {
-			} else if (c == 'f' && getInfrontChar(view) == '*') {
-			} else if (c == 'f' && getInfrontChar(view) == '~') {
-			} else {
-				break;
-			}
-		}
-
-		
-		//finishing code to save the state to use next time
-		switch(c) {
-		case 'l': orientation--; break; //think right to up which is 1 to 0
-		case 'r': orientation++; break; //think up to right which is 0 to 1
-		case 'f':
-			char ni = getInfrontChar(view);
-			if (ni == 'T' || ni == '*' || ni == '~') break; //don't move
+		if (gridContains('a')) {
+			LinkedList<Point> trail = Help.bfs4Char('a');
+			Point p = trail.get(1);
+			System.out.println("Getting axe, " + pos.x + "|" + pos.y +", " + p);
 			
-			switch(orientation) { //use your brain as left and up are the positive direction
-			case 0: position.y--; break;
-			case 1: position.x++; break;
-			case 2: position.y++; break;
-			case 3: position.x--; break;
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
 			}
-			break;
 		}
 		
-		if (orientation < 0) orientation = 3;
-		if (orientation > 3) orientation = 0;
+		if (gridContains('d')) {
+			LinkedList<Point> trail = Help.bfs4Char('d');
+			Point p = trail.get(1);
+			System.out.println("Getting dynamite," + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+		}
 		
-		moveCount++;
-		System.out.println("Chose: " + c + ", Move counter: " + moveCount);
-		return c;
+		
+		//default explore: 
+		
+		//TODO something about trying to uncover all ?s even if you can't reach them
+		LinkedList<Point> trail = Help.bfs4Char('?');
+		Point p = trail.get(1);
+		System.out.println("Default looking for ?s," + pos.x + "|" + pos.y +", " + p);
+		
+		if(getInfrontPoint().equals(p)) {
+			return 'f';
+		} else {
+			return 'l';
+		}
+		
+		
+		//TODO: if we can't find a clean path to a ? look for places within 2 of a ?
+		
+		//unreachable code here
+//		return 'x';
 	}
 	
-	//so we don'y kill ourselves by moving forward
-	private char getInfrontChar(char view[][]) {
+	//so we don't kill ourselves by moving forward
+	private char getInfrontChar() {
 		switch(orientation) { //use your brain as left and up are the positive direction
-		case 0: return view[1][2]; //middle is [2][2]
-		case 1: return view[2][3];
-		case 2: return view[3][2];
-		case 3: return view[2][1];
+		case 0: return grid[pos.y-1][pos.x]; //middle is [apos.y][apos.x]
+		case 1: return grid[pos.y][pos.x+1];
+		case 2: return grid[pos.y+1][pos.x];
+		case 3: return grid[pos.y][pos.x-1];
 		}
 		return '?';
 	}
 	
+	private Point getInfrontPoint() {
+		switch(orientation) { //use your brain as left and up are the positive direction
+		case 0: return new Point(pos.x, pos.y-1);
+		case 1: return new Point(pos.x+1, pos.y);
+		case 2: return new Point(pos.x, pos.y+1);
+		case 3: return new Point(pos.x-1, pos.y);
+		}
+		return null;
+	}
+	
 	//fills in our world grid.
 	private void fillGrid(char[][] view) {
-		int x = position.x;
-		int y = position.y;
+		int x = pos.x;
+		int y = pos.y;
 		
 		for (int i = 0; i < 5; i++) {
 			for (int j = 0; j < 5; j++) {
 				grid[y+i-2][x+j-2] = view[i][j];
 				if (grid[y+i-2][x+j-2] == 'g') {
-					goldPos = new Point(y+i-2, x+j-2);
+					goldPos = new Point(x+j-2, y+i-2);
 				}
 			}
 		}
-		
-		grid[y][x] = '#'; //player
+		switch(orientation) {
+		case 0: grid[y][x] = '^'; break;
+		case 1: grid[y][x] = '>'; break;
+		case 2: grid[y][x] = 'v'; break;
+		case 3: grid[y][x] = '<'; break;
+		}
 		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home (its always here)
 	}
 
-
-	//just in case we need it
-	public LinkedList<Point> bfs(Point start, Point dest) {
-		LinkedList<Point> q = new LinkedList<Point>();
-		LinkedList<Point> neig = new LinkedList<Point>();
-		HashMap<Point, Point> parentMap = new HashMap<Point, Point>();
-		
-		Point cur = null;
-		
-		q.add(start);
-		while (!q.isEmpty()) {
-			cur = q.poll();
-			
-			neig = getNeightbours(cur);
-			if (neig.contains(dest)) {
-				parentMap.put(dest, cur);
-				break;
-			}
-			
-			for (Point p : neig) {
-				if (!parentMap.containsKey(p)) {
-					parentMap.put(p, cur);
-					q.add(p);
+	private boolean gridContains(char in) {
+		for (int i = 0; i < MAX_SIZE; i++) {
+			for (int j = 0; j < MAX_SIZE; j++) {
+				if (grid[i][j] == in) {
+					return true;
 				}
 			}
 		}
-		
-		LinkedList<Point> trail = new LinkedList<Point>();
-		trail.add(dest);
-		cur = dest;
-		
-		while (cur != start) {
-			trail.addFirst(parentMap.get(cur));
-			cur = parentMap.get(cur);
+		return false;
+	}
+	
+	void print(char view[][]) {
+		System.out.print("+");
+		for (int i = 0; i < view.length; i++) {
+			System.out.print("-");
 		}
-		
-		return trail;
-	}
-	
-
-	//Priority queue node
-	class QueueNode<E> implements Comparable<QueueNode<E>> {
-		QueueNode<E> parent;
-		E e;
-		double weight; //although its probably an int
-		QueueNode (QueueNode<E> parent, E e, double weight) {
-			this.parent = parent;
-			this.e = e;
-			this.weight = weight;
-		}
-		
-		@Override
-		public int compareTo(QueueNode<E> arg0) {
-			if (this.weight <= arg0.weight) {
-				return -1;
-			}
-			return 1;
-		}
-	}
-	
-	//will require some kind of convert to action sequence
-		//note that it uses the java.awt.Point class which contains 2 ints
-	public LinkedList<Point> aStar(Point start, Point dest) {
-		PriorityQueue<QueueNode<Point>> pq = new PriorityQueue<QueueNode<Point>>();
-		
-		HashSet<QueueNode<Point>> seen = new HashSet<QueueNode<Point>>();
-		
-		QueueNode<Point> popped = null;
-		Point curPoint = null;
-		
-		pq.add(new QueueNode<Point>(null, start, 0+0));
-		while (!pq.isEmpty()) {
-			popped = pq.poll();
-			curPoint = popped.e;
-			
-			if (!seen.contains(popped)) {
-				seen.add(popped);
-			}
-			
-			if (curPoint.equals(dest)) { //we are done here
-				break;
-			} else {
-				for (Point p : getNeightbours(curPoint)) {
-					if (!seen.contains(p)) {
-						pq.add(new QueueNode<Point>(popped, p, 0));
-					}
-				}
-			}
-		}
-
-		LinkedList<Point> trail = new LinkedList<Point>();
-		QueueNode<Point> cur = popped;
-		while(cur != null) {
-			trail.addFirst(cur.e);
-			cur = cur.parent;	
-		}
-		
-		return trail;
-	}
-	
-	//gets the neighbours
-	private LinkedList<Point> getNeightbours(Point in) {
-		LinkedList<Point> out = new LinkedList<Point>();
-	
-		if (isInside(in.x+1, in.y)) out.add(new Point(in.x+1,in.y));
-		if (isInside(in.x-1, in.y))	out.add(new Point(in.x-1,in.y));
-		
-		if (isInside(in.x, in.y+1))	out.add(new Point(in.x,in.y+1));
-		if (isInside(in.x, in.y-1))	out.add(new Point(in.x,in.y-1));
-		
-		return out;
-	}
-	
-	//simple checker
-	private boolean isInside(int x, int y) {
-		if (x > MAX_SIZE || x < 0) return false;
-		if (y > MAX_SIZE || y < 0) return false;
-		return true;
-	}
-	
-	//found on the internets
-	//http://stackoverflow.com/questions/42519/how-do-you-rotate-a-two-dimensional-array
-	public char[][] rotateMatrixRight(char[][] matrix) {
-	    int w = matrix.length; // W and H are already swapped
-	    int h = matrix[0].length;
-	    char[][] ret = new char[h][w];
-	    for (int i = 0; i < h; ++i) {
-	        for (int j = 0; j < w; ++j) {
-	            ret[i][j] = matrix[w - j - 1][i];
-	        }
-	    }
-	    return ret;
-	}
-	
-	public char[][] rotateMatrixLeft(char[][] matrix) {
-	    int w = matrix.length; // W and H are already swapped
-	    int h = matrix[0].length;   
-	    char[][] ret = new char[h][w];
-	    for (int i = 0; i < h; ++i) {
-	        for (int j = 0; j < w; ++j) {
-	            ret[i][j] = matrix[j][h - i - 1];
-	        }
-	    }
-	    return ret;
-	}
-	
-	
-	//////////////////////////////////////////////////////////////////
-	//Don't touch below
-	void print_view(char view[][]) {
-		
-		System.out.println("\n+-----+");
+		System.out.println("+");
 		for (int i = 0; i < view.length; i++) {
 			System.out.print("|");
 			for (int j = 0; j < view[0].length; j++) {
-				if ((i == 2) && (j == 2)) {
-					System.out.print('^'); //player is always at 2,2; f would go to 1,2 
-				} else {
-					System.out.print(view[i][j]);
-				}
+				System.out.print(view[i][j]);
 			}
 			System.out.println("|");
 		}
-		System.out.println("+-----+");
+		System.out.print("+");
+		for (int i = 0; i < view.length; i++) {
+			System.out.print("-");
+		}
+		System.out.println("+");
 	}
 
+	//please don't touch below
 	public static void main(String[] args) {
 		InputStream in = null;
 		OutputStream out = null;

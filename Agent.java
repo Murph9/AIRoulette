@@ -12,33 +12,33 @@ import java.net.*;
 
 public class Agent {
 
-	public static final char[] options = {'f', 'l', 'r'};//, 'c', 'b'}; TODO add them as options
+	public static final char[] options = {'f', 'l', 'r'};//, 'c', 'b'};
 		//f = forward, l = rotate left, r = rotate right, c = chop, b = bomb
 		//lowercase because avoiding conflicts
 	
-	public static final char[] fieldIcons = {'T', 'a', '*', '~', 'd', 'B', 'g'};
-		//T = tree, a = axe, * = wall, d = dynamite, ~ = water, B = boat, g = gold
+	public static final char[] fieldIcons = {'T', 'a', '*', '~', 'd', 'B', 'g', '.'};
+		//T = tree, a = axe, * = wall, d = dynamite, ~ = water, B = boat, g = gold, . = outside
 	
 	public static final char[] otherIcons = {'h', '?'}; //defined by us
-		//h = home, ? - known space, any more?
+		//h = home, ? - unknown, any more?
 	
 	//suggested variables (i.e. variables that Bounty keeps as well)
 	public boolean hasAxe;
 	public boolean haskey;
-	public boolean hasGold;
 	public boolean inBoat;
 	public int numBombs;
+	
+	public boolean hasGold;
+	public Point goldPos;
 	
 	//variables we might need that are guesses:
 	public int orientation; //or something to know which direction we are facing
 		//0 = up, 1 = right, 2 = down, 3 = left  (so clockwise)
 		//starts on 0, so the inital direction is up
-	public Point position;
+	public Point position; //current position of the agent
 	
-	
-	public final int MAX_SIZE = 61; //TODO change back to 161, 
-		//suggesting change to 80*2 + 1 + 4 = 165
-		//because we can also see 2 more squares than that
+	public final int MAX_SIZE = 51; //TODO change back to 161, 
+		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port)
 	
 	public char grid[][]; //the map (size to be determined)
 	
@@ -48,7 +48,8 @@ public class Agent {
 		moveCount = 0;
 		numBombs = 0;
 		orientation = 0;
-		position = new Point(MAX_SIZE/2, MAX_SIZE/2); //should be floor be 80 if MAX_SIZE = 161
+		goldPos = null;
+		position = new Point(MAX_SIZE/2, MAX_SIZE/2); //should = 80 if (MAX_SIZE == 161)
 		
 		grid = new char[MAX_SIZE][MAX_SIZE];
 		for (int i = 0; i < MAX_SIZE; i++) {
@@ -72,15 +73,16 @@ public class Agent {
 			//by doing this we are making all our variables compared to global position
 		switch(orientation) {
 //		case 0: //is doing nothing with its life..; break;
-		case 1: view = rotateMatrixRight(view); break;
-		case 2: view = rotateMatrixLeft(view); view = rotateMatrixLeft(view); break;
-		case 3: view = rotateMatrixLeft(view); break;
+		case 1: 
+			view = rotateMatrixRight(view); break;
+		case 2: 
+			view = rotateMatrixLeft(view); 
+			view = rotateMatrixLeft(view); break;
+		case 3: 
+			view = rotateMatrixLeft(view); break;
 		}
-		//fill in grid.
-		fillGrid(view);
-		print_view(grid);
-//		char temp = getInfrontChar(view);
-//		System.out.println("'" + temp + "', or: " + orientation + ", pos: " + position.x + "|" + position.y);
+		fillGrid(view); //fill in grid.
+//		print_view(grid);
 		
 		/* Possible Movement Logic?:
 		 * 
@@ -97,7 +99,32 @@ public class Agent {
 		 *   try use bombs
 		 */
 		
-		Random rand = new Random(); //a random moving ai.
+		//try for goal
+		if (goldPos != null) { //we have seen it
+			System.out.println("we see it");
+			if (/*path from here to gold*/true) {
+				//go to it
+			}
+			
+			if (position.x == goldPos.x && position.y == goldPos.y) {
+				hasGold = true;
+				System.out.println("we have it");
+			}
+		}
+		if (hasGold) { //then go home
+			System.out.println("We are going home");
+			//get move then return
+		}
+		
+		
+		//if can see an item try to go to it
+		//else if can explore some reachable '?'
+		//else
+			//try axe
+			//try boat
+			//try bombs
+		
+		Random rand = new Random(); //a random moving ai...
 		
 		char c = 0;
 		while (true) {
@@ -132,10 +159,11 @@ public class Agent {
 		if (orientation > 3) orientation = 0;
 		
 		moveCount++;
-		System.out.println("chose: " + c + ", count: " + moveCount);
+		System.out.println("Chose: " + c + ", Move counter: " + moveCount);
 		return c;
 	}
 	
+	//so we don'y kill ourselves by moving forward
 	private char getInfrontChar(char view[][]) {
 		switch(orientation) { //use your brain as left and up are the positive direction
 		case 0: return view[1][2]; //middle is [2][2]
@@ -146,21 +174,63 @@ public class Agent {
 		return '?';
 	}
 	
+	//fills in our world grid.
 	private void fillGrid(char[][] view) {
 		int x = position.x;
 		int y = position.y;
 		
 		for (int i = 0; i < 5; i++) {
 			for (int j = 0; j < 5; j++) {
-				grid[y+i-2][x+j-2] = view[i][j]; //TODO check this actually works
+				grid[y+i-2][x+j-2] = view[i][j];
+				if (grid[y+i-2][x+j-2] == 'g') {
+					goldPos = new Point(y+i-2, x+j-2);
+				}
 			}
 		}
 		
 		grid[y][x] = '#'; //player
-		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home
+		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home (its always here)
 	}
 
 
+	//just in case we need it
+	public LinkedList<Point> bfs(Point start, Point dest) {
+		LinkedList<Point> q = new LinkedList<Point>();
+		LinkedList<Point> neig = new LinkedList<Point>();
+		HashMap<Point, Point> parentMap = new HashMap<Point, Point>();
+		
+		Point cur = null;
+		
+		q.add(start);
+		while (!q.isEmpty()) {
+			cur = q.poll();
+			
+			neig = getNeightbours(cur);
+			if (neig.contains(dest)) {
+				parentMap.put(dest, cur);
+				break;
+			}
+			
+			for (Point p : neig) {
+				if (!parentMap.containsKey(p)) {
+					parentMap.put(p, cur);
+					q.add(p);
+				}
+			}
+		}
+		
+		LinkedList<Point> trail = new LinkedList<Point>();
+		trail.add(dest);
+		cur = dest;
+		
+		while (cur != start) {
+			trail.addFirst(parentMap.get(cur));
+			cur = parentMap.get(cur);
+		}
+		
+		return trail;
+	}
+	
 
 	//Priority queue node
 	class QueueNode<E> implements Comparable<QueueNode<E>> {
@@ -184,7 +254,6 @@ public class Agent {
 	
 	//will require some kind of convert to action sequence
 		//note that it uses the java.awt.Point class which contains 2 ints
-	//
 	public LinkedList<Point> aStar(Point start, Point dest) {
 		PriorityQueue<QueueNode<Point>> pq = new PriorityQueue<QueueNode<Point>>();
 		
@@ -272,7 +341,6 @@ public class Agent {
 	
 	//////////////////////////////////////////////////////////////////
 	//Don't touch below
-
 	void print_view(char view[][]) {
 		
 		System.out.println("\n+-----+");
@@ -330,7 +398,7 @@ public class Agent {
 						}
 					}
 				}
-//				agent.print_view(view); // TODO COMMENT THIS OUT BEFORE SUBMISSION,
+//				agent.print_view(view); //COMMENT THIS OUT BEFORE SUBMISSION,
 				action = agent.get_action(view);
 				out.write(action);
 			}

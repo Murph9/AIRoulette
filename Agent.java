@@ -12,7 +12,7 @@ import java.net.*;
 
 public class Agent {
 
-	public static final char[] options = {'f', 'l', 'r'};//, 'c', 'b'};
+	public static final char[] options = {'f', 'l', 'r', 'c', 'b'};
 		//f = forward, l = rotate left, r = rotate right, c = chop, b = bomb
 		//lowercase because avoiding conflicts
 	
@@ -96,10 +96,13 @@ public class Agent {
 		case 'r': orientation++; break; //think up to right which is 0 to 1
 		case 'f':
 			char ni = getInfrontChar();
-			if (ni == 'T' || ni == '*' || ni == '~') break; //we won't move so don't change the agent pos
-			if (ni == 'g') hasGold = true;
+			if (ni == 'T' || ni == '*') break; //we won't move so don't change the agent pos
+			if (ni == '~' && !inBoat) 	break; //see water, but no boat, stop
+			if (ni == 'g') hasGold = true; goldPos = null;
 			if (ni == 'a') hasAxe = true;
 			if (ni == 'b') numBombs++;
+			if (ni == 'B') inBoat = true;
+			if (ni == ' ' && inBoat) inBoat = false;
 			
 			switch(orientation) { //use your brain as left and down are the positive directions (its a grid)
 			case 0: pos.y--; break;
@@ -137,25 +140,58 @@ public class Agent {
 		 *   try use bombs
 		 */
 		
-
+		//TODO make it cleaner, there is a lot of ifs here.
+		
+		
+		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', '*', 'T'));
+		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
+		if (inBoat) defaultList.remove(new Character('~'));
+		
 		if (hasGold) { //then go home
 			//get move then return
 			
-			LinkedList<Point> trail = Help.bfs4Char('H');
-			Point p = trail.get(1);
-			System.out.println("Have gold, going home, " + pos.x + "|" + pos.y +", " + trail);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
+			LinkedList<Point> trail = Help.bfs4Char('H', 0, defaultList);
+			if (!trail.isEmpty()) {
+				Point p = trail.get(1);
+				System.out.println("Have gold, going home, " + pos.x + "|" + pos.y +", " + trail);
+				
+				if(getInfrontPoint().equals(p)) {
+					return 'f';
+				} else {
+					return 'l';
+				}
 			}
 		}
 		
 		//try for goal
 		if (goldPos != null) { //we have seen it
-			//TODO needs check if can reach goal
-			LinkedList<Point> trail = Help.bfs4Char('g');
+
+			LinkedList<Point> trail = Help.bfs4Char('g', 0, defaultList);
+			if (trail.isEmpty()) {
+				//we can't reach the goal without breaking '*'s now...
+				defaultList.remove(new Character('*'));
+				
+				trail = Help.bfs4Char('g', 2, defaultList);
+				
+				if (trail.size() == 1) { //only pos and dest
+					System.out.println("Going against knowledge and using bomb, " + pos.x + "|" + pos.y);
+					if (getInfrontChar() == '*') {
+						return 'b'; //use a bomb
+					} else {
+						return 'l'; //or rotate till we get there
+					}
+				}
+				
+				Point p = trail.get(1);
+				System.out.println("Know gold exists but can't get there, " + pos.x + "|" + pos.y +", " + p);
+				
+				if(getInfrontPoint().equals(p)) {
+					return 'f';
+				} else {
+					return 'l';
+				}
+			}
+			
 			Point p = trail.get(1);
 			System.out.println("Know gold exists, " + pos.x + "|" + pos.y +", " + p);
 			
@@ -166,8 +202,8 @@ public class Agent {
 			}
 		}
 		
-		if (hasAxe && gridContains('T')) { //TODO gets lost on looking for 'T'
-			LinkedList<Point> trail = Help.bfs4Char('T');
+		if (hasAxe && gridContains('T')) {
+			LinkedList<Point> trail = Help.bfs4Char('T', 0, defaultList);
 			Point p = trail.get(1);
 			System.out.println("Have axe on route to T, " + pos.x + "|" + pos.y +", " + p);
 			
@@ -186,7 +222,7 @@ public class Agent {
 			//try bombs
 		
 		if (gridContains('a')) {
-			LinkedList<Point> trail = Help.bfs4Char('a');
+			LinkedList<Point> trail = Help.bfs4Char('a', 0, defaultList);
 			Point p = trail.get(1);
 			System.out.println("Getting axe, " + pos.x + "|" + pos.y +", " + p);
 			
@@ -198,7 +234,7 @@ public class Agent {
 		}
 		
 		if (gridContains('d')) {
-			LinkedList<Point> trail = Help.bfs4Char('d');
+			LinkedList<Point> trail = Help.bfs4Char('d', 0, defaultList);
 			Point p = trail.get(1);
 			System.out.println("Getting dynamite," + pos.x + "|" + pos.y +", " + p);
 			
@@ -209,24 +245,59 @@ public class Agent {
 			}
 		}
 		
+		if (gridContains('B')) {
+			LinkedList<Point> trail = Help.bfs4Char('B', 0, defaultList);
+			Point p = trail.get(1);
+			System.out.println("Finding boat," + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+		}
+		
+		if (inBoat) {
+			defaultList.remove(new Character('~'));
+			LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
+			Point p = trail.get(1);
+			System.out.println("Using boat looking for ?s," + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+		}
 		
 		//default explore: 
 		
-		//TODO something about trying to uncover all ?s even if you can't reach them
-		LinkedList<Point> trail = Help.bfs4Char('?');
-		Point p = trail.get(1);
-		System.out.println("Default looking for ?s," + pos.x + "|" + pos.y +", " + p);
-		
-		if(getInfrontPoint().equals(p)) {
-			return 'f';
+		//TODO something about trying to uncover all ?s even if you can't just reach them (2 blocks away)
+		LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
+		if (trail.isEmpty()) {
+			//i.e. the result didn't find a solution
+			trail = Help.bfs4Char('?', 2, defaultList);
+			Point p = trail.get(1);
+			System.out.println("Looking for far reaching ?s," + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
+			
 		} else {
-			return 'l';
+			Point p = trail.get(1);
+			System.out.println("Looking for ?s," + pos.x + "|" + pos.y +", " + p);
+			
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l';
+			}
 		}
 		
-		
-		//TODO: if we can't find a clean path to a ? look for places within 2 of a ?
-		
-		//unreachable code here
+		//make sure this line is unreachable code
 //		return 'x';
 	}
 	

@@ -1,8 +1,5 @@
 import java.awt.Point;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
+import java.util.*;
 
 //class for helpful methods
 public class Help {
@@ -50,26 +47,41 @@ public class Help {
 
 	
 	//special case of bfs that just looks for the closest given char, and returns the first move Point
-	public static LinkedList<Point> bfs4Char(char in) {
+	/**
+	 * @param in char to search to
+	 * @param avoid list of chars that act as walls in the search
+	 * @return
+	 */
+	/**
+	 * @param in char to search to
+	 * @param offset distance to char that is acceptable
+	 * @param avoid list of chars that act as walls in the search
+	 * @return
+	 */
+	public static LinkedList<Point> bfs4Char(char in, int offset, LinkedList<Character> avoid) {
+		if (avoid == null) {
+			avoid = new LinkedList<Character>(); //just so its search able but useless
+		}
+
 		LinkedList<Point> Q = new LinkedList<Point>();
 		HashMap<Point, Point> parentMap = new HashMap<Point, Point>();
 		
 		Point v = null;
+		boolean foundSolution = false;
 		
 		Q.add(Agent.pos); //enqueue
 		while (!Q.isEmpty()) {
 			v = Q.poll(); //dequeue
 			
 			//process v
-			if (Agent.grid[v.y][v.x] == in) {
+//			if (Agent.grid[v.y][v.x] == in) {
+			if (isCharWithinRange(v, in, offset)) {
+				foundSolution = true;
 				break;
 			}
 						
 			for (Point p : getNeighbours(v)) {
-				if (Agent.grid[p.y][p.x] == '~' || Agent.grid[p.y][p.x] == '*') continue; 
-					//can't transverse accross this yet
-					//TODO check for '?'
-				if (Agent.grid[p.y][p.x] == 'T' && !Agent.hasAxe) {
+				if (avoid.contains(Agent.grid[p.y][p.x])) {
 					continue;
 				}
 				
@@ -78,8 +90,13 @@ public class Help {
 					parentMap.put(p, v);
 				}
 			}
-
 		}
+
+		if (!foundSolution) { //then we may have a problem
+			return new LinkedList<Point>();
+		}
+		
+		
 		LinkedList<Point> trail = new LinkedList<Point>();
 		trail.add(v);
 
@@ -89,6 +106,22 @@ public class Help {
 		}
 		
 		return trail;
+	}
+	
+	private static boolean isCharWithinRange(Point p, char c, int range) {
+		if (range < 1 && Agent.grid[p.y][p.x] == c) { //so its the thing im searching for
+			return true;
+		}
+		
+		for (int i = -range; i < range+1; i++) {
+			for (int j = -range; j < range+1; j++) {
+				if (c == Agent.grid[p.y+i][p.x+j]) {
+					return true;
+				}
+			}
+		}
+		
+		return false;
 	}
 	
 	
@@ -203,7 +236,4 @@ public class Help {
 			return 1;
 		}
 	}
-	
-
-
 }

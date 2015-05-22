@@ -101,7 +101,9 @@ public class Agent {
 		char c = computeAction(); //important part
 		
 		char in = getInfrontChar(); //override the computed action if we are facing a tree with an axe
-		if (in == 'T' && hasAxe == true) c = 'c';
+		if (in == 'T' && hasAxe == true) {
+			c = 'c';
+		}
 		
 		//finishing code to save the state to use next time
 		switch(c) {
@@ -162,7 +164,7 @@ public class Agent {
 		 */
 		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', '*', 'T'));
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
-		if (inBoat) defaultList.remove(new Character('~'));
+//		if (inBoat) defaultList.remove(new Character('~'));
 		
 		
 		if (hasGold) {
@@ -179,7 +181,7 @@ public class Agent {
 			}
 		}
 		
-		char out = getPath(new char[]{'a', 'd', 'T', '?'}, defaultList);
+		char out = getPath(new char[]{'a', 'd', '?', 'T'}, defaultList);
 		if (out != 0) {
 			return out;
 		}
@@ -187,7 +189,13 @@ public class Agent {
 		
 		LinkedList<Point> path = Help.bfs4Char(pos, '?', 2, defaultList);
 		if (!path.isEmpty()) {
-			path.get(1);
+			Point p = path.get(1);
+			System.out.println("Looking for: ?");
+			if(getInfrontPoint().equals(p)) {
+				return 'f';
+			} else {
+				return 'l'; //TODO better logic on rotation?
+			}
 		}
 		
 		if (Stuck()) {
@@ -201,14 +209,14 @@ public class Agent {
 		
 		System.out.println("so random:?");
 		Random r = new Random();
-		return options[r.nextInt(5)];
-		/*
+		return options[r.nextInt(3)];
+		
 		//get paths for bombs:
 			//see if you can use bombs to get you to goal
 			//see if you can use bombs to get an item
 			//see if you can use bombs to get a ?
 
-		
+		/*
 		
 		if (hasGold) { //then go home
 			//get move then return
@@ -340,7 +348,6 @@ public class Agent {
 		
 		//default explore: 
 		
-		//TODO something about trying to uncover all ?s even if you can't just reach them (2 blocks away)
 		LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
 		if (trail.isEmpty()) {
 			//i.e. the result didn't find a solution
@@ -384,7 +391,7 @@ public class Agent {
 			}
 		}
 		
-		return 0; //default return when failure
+		return 0; //default return for failure
 	}
 	
 	// Checks if the agent is stuck leaving and entering a boat

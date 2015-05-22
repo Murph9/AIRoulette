@@ -236,4 +236,20 @@ public class Help {
 			return 1;
 		}
 	}
+	
+	//Initialises array
+	public static void initArray(Point[] array) {
+		Point emptyPoint = new Point(-1, -1);
+		for (int i = 0; i < array.length; i++) {
+			array[i] = emptyPoint;
+		}
+	}
+	
+	// Shifts all elements of an array 1 to the left
+	public static void arrayShift(Point[] array) {
+		for (int i = array.length - 1; i > 0; i--) {
+			array[i] = array[i-1];
+		}
+		
+	}
 }

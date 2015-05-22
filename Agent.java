@@ -27,6 +27,7 @@ public class Agent {
 	public static boolean haskey;
 	public static boolean inBoat;
 	public static int numBombs;
+	public static int minI, minJ, maxI, maxJ;
 	
 	public boolean hasGold;
 	public Point goldPos;
@@ -36,6 +37,10 @@ public class Agent {
 		//0 = up, 1 = right, 2 = down, 3 = left  (so clockwise)
 		//starts on 0, so the inital direction is up
 	public static Point pos; //current position of the agent
+	
+	// NEW VARIABLE
+	public static Point[] previousPos;
+	public static final int PREVS = 6;
 	
 	public static final int MAX_SIZE = 61; //TODO change back to 161, 
 		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port)
@@ -50,6 +55,14 @@ public class Agent {
 		orientation = 0;
 		goldPos = null;
 		pos = new Point(MAX_SIZE/2, MAX_SIZE/2); //should = 80 if (MAX_SIZE == 161)
+		previousPos = new Point[PREVS];
+		Help.initArray(previousPos);
+		
+		//Variables to make the printout cleaner
+		minI = MAX_SIZE;
+		minJ = MAX_SIZE;
+		maxI = 0;
+		maxJ = 0;
 		
 		grid = new char[MAX_SIZE][MAX_SIZE];
 		for (int i = 0; i < MAX_SIZE; i++) {
@@ -95,6 +108,10 @@ public class Agent {
 		case 'l': orientation--; break; //think right to up which is 1 to 0
 		case 'r': orientation++; break; //think up to right which is 0 to 1
 		case 'f':
+			// NEW STUFF
+			Help.arrayShift(Agent.previousPos);
+			Agent.previousPos[0] = new Point(Agent.pos.x, Agent.pos.y);
+			//
 			char ni = getInfrontChar();
 			if (ni == 'T' || ni == '*') break; //we won't move so don't change the agent pos
 			if (ni == '~' && !inBoat) 	break; //see water, but no boat, stop
@@ -260,6 +277,11 @@ public class Agent {
 		if (inBoat) {
 			defaultList.remove(new Character('~'));
 			LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
+			if (Stuck()) {
+				defaultList.add(new Character(' '));
+				trail = Help.bfs4Char('?', 0, defaultList);
+				defaultList.remove(new Character(' '));
+			}
 			Point p = trail.get(1);
 			System.out.println("Using boat looking for ?s," + pos.x + "|" + pos.y +", " + p);
 			
@@ -301,6 +323,24 @@ public class Agent {
 //		return 'x';
 	}
 	
+	// Checks if the agent is stuck leaving and entering a boat
+	private boolean Stuck() {
+		int count = 0;
+		for (int i = 0; i < PREVS; i++) {
+			// odd positions only
+			if (i%2 == 1) {
+				if (Agent.pos.x == Agent.previousPos[i].x && Agent.pos.y == Agent.previousPos[i].y) {
+					count++;
+				}
+			}
+		}
+		if (count == PREVS/2) {
+			return true;
+		}
+		
+		return false;
+	}
+	
 	//so we don't kill ourselves by moving forward
 	private char getInfrontChar() {
 		switch(orientation) { //use your brain as left and up are the positive direction
@@ -330,6 +370,14 @@ public class Agent {
 		for (int i = 0; i < 5; i++) {
 			for (int j = 0; j < 5; j++) {
 				grid[y+i-2][x+j-2] = view[i][j];
+				
+				// Stuff to help with printing out
+				minI = ((y+i-2) < minI) ? y+i-2 : minI;
+				minJ = ((x+j-2) < minJ) ? x+j-2 : minJ;
+				maxI = ((y+i-2) > maxI) ? y+i-2 : maxI;
+				maxJ = ((x+j-2) > maxJ) ? x+j-2 : maxJ;
+				//
+				
 				if (grid[y+i-2][x+j-2] == 'g') {
 					goldPos = new Point(x+j-2, y+i-2);
 				}
@@ -356,7 +404,28 @@ public class Agent {
 	}
 	
 	void print(char view[][]) {
+		
+		// Modified view made by Ethan
 		System.out.print("+");
+		for (int i = 0; i < maxJ - minJ; i++) {
+			System.out.print("-");
+		}
+		System.out.println("+");
+		for (int i = minI; i <= maxI; i++) {
+			System.out.print("|");
+			for (int j = minJ; j < maxJ; j++) {
+				System.out.print(view[i][j]);
+			}
+			System.out.println("|");
+		}
+		System.out.print("+");
+		for (int i = 0; i < maxJ - minJ; i++) {
+			System.out.print("-");
+		}
+		System.out.println("+");
+		//
+		
+		/*System.out.print("+");
 		for (int i = 0; i < view.length; i++) {
 			System.out.print("-");
 		}
@@ -372,7 +441,7 @@ public class Agent {
 		for (int i = 0; i < view.length; i++) {
 			System.out.print("-");
 		}
-		System.out.println("+");
+		System.out.println("+");*/
 	}
 
 	//please don't touch below

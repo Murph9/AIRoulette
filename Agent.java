@@ -157,6 +157,24 @@ public class Agent {
 		 *   try use bombs
 		 */
 		
+		//if there is no path to where they want to go, try for using boat on path
+			//go to the next thing on the list
+		//expected list:
+		/* got goal going home
+		 * try for goal
+		 * get the caxe
+		 * get bomb
+		 * explore (for ?s) 
+		 * 	then with in 2 range
+		 * cut Trees
+		 * 
+		 * see if using bombs help you get to goal
+		 * see if using bombs help you to get an item
+		 * see if using bombs help you to get ?s
+		 * 
+		 * random or something?
+		 */
+		
 		//TODO make it cleaner, there is a lot of ifs here.
 		
 		

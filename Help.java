@@ -58,7 +58,7 @@ public class Help {
 	 * @param avoid list of chars that act as walls in the search
 	 * @return
 	 */
-	public static LinkedList<Point> bfs4Char(char in, int offset, LinkedList<Character> avoid) {
+	public static LinkedList<Point> bfs4Char(Point start, char in, int offset, LinkedList<Character> avoid) {
 		if (avoid == null) {
 			avoid = new LinkedList<Character>(); //just so its search able but useless
 		}
@@ -69,7 +69,7 @@ public class Help {
 		Point v = null;
 		boolean foundSolution = false;
 		
-		Q.add(Agent.pos); //enqueue
+		Q.add(start); //enqueue
 		while (!Q.isEmpty()) {
 			v = Q.poll(); //dequeue
 			
@@ -100,7 +100,7 @@ public class Help {
 		LinkedList<Point> trail = new LinkedList<Point>();
 		trail.add(v);
 
-		while(!v.equals(Agent.pos)) {
+		while(!v.equals(start)) {
 			trail.addFirst(parentMap.get(v));
 			v = parentMap.get(v);
 		}

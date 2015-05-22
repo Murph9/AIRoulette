@@ -42,8 +42,8 @@ public class Agent {
 	public static Point[] previousPos;
 	public static final int PREVS = 6;
 	
-	public static final int MAX_SIZE = 61; //TODO change back to 161, 
-		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port)
+	public static final int MAX_SIZE = 81; //TODO change back to 165, 
+		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port size)
 	
 	public static char grid[][]; //the map (size to be determined)
 	
@@ -108,10 +108,10 @@ public class Agent {
 		case 'l': orientation--; break; //think right to up which is 1 to 0
 		case 'r': orientation++; break; //think up to right which is 0 to 1
 		case 'f':
-			// NEW STUFF
+			// add things to the previous pos array
 			Help.arrayShift(Agent.previousPos);
-			Agent.previousPos[0] = new Point(Agent.pos.x, Agent.pos.y);
-			//
+			Agent.previousPos[0] = new Point(Agent.pos.x, Agent.pos.y); //avoid giving the reference
+			
 			char ni = getInfrontChar();
 			if (ni == 'T' || ni == '*') break; //we won't move so don't change the agent pos
 			if (ni == '~' && !inBoat) 	break; //see water, but no boat, stop
@@ -142,27 +142,13 @@ public class Agent {
 	
 	//the meat of the code
 	private char computeAction() {
-		/* Possible Movement Logic?:
-		 * 
-		 * if got goal go home
-		 * try for goal
-		 * if item 
-		 *   pick it up
-		 * else if something like, check for unexplored areas
-		 *   follow edge
-		 *   fill in holes
-		 * else
-		 *   try use axe
-		 *   try use boat
-		 *   try use bombs
-		 */
 		
 		//if there is no path to where they want to go, try for using boat on path
 			//go to the next thing on the list
 		//expected list:
-		/* got goal going home
+		/* hasGold == true aim for 'H' got goal going home
 		 * try for goal
-		 * get the caxe
+		 * get the axe
 		 * get bomb
 		 * explore (for ?s) 
 		 * 	then with in 2 range
@@ -174,13 +160,55 @@ public class Agent {
 		 * 
 		 * random or something?
 		 */
-		
-		//TODO make it cleaner, there is a lot of ifs here.
-		
-		
 		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', '*', 'T'));
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
 		if (inBoat) defaultList.remove(new Character('~'));
+		
+		
+		if (hasGold) {
+			char out = getPath(new char[]{'H'}, defaultList);
+			if (out != 0) {
+				return out;
+			}
+		}
+		
+		if (goldPos != null) {
+			char out = getPath(new char[]{'g'}, defaultList);
+			if (out != 0) {
+				return out;
+			}
+		}
+		
+		char out = getPath(new char[]{'a', 'd', 'T', '?'}, defaultList);
+		if (out != 0) {
+			return out;
+		}
+		
+		
+		LinkedList<Point> path = Help.bfs4Char(pos, '?', 2, defaultList);
+		if (!path.isEmpty()) {
+			path.get(1);
+		}
+		
+		if (Stuck()) {
+			defaultList.add(new Character(' '));
+		}
+		
+		out = getPath(new char[]{'B'}, defaultList);
+		if (out != 0) {
+			return out;
+		}
+		
+		System.out.println("so random:?");
+		Random r = new Random();
+		return options[r.nextInt(5)];
+		/*
+		//get paths for bombs:
+			//see if you can use bombs to get you to goal
+			//see if you can use bombs to get an item
+			//see if you can use bombs to get a ?
+
+		
 		
 		if (hasGold) { //then go home
 			//get move then return
@@ -336,9 +364,27 @@ public class Agent {
 				return 'l';
 			}
 		}
-		
+		*/
 		//make sure this line is unreachable code
 //		return 'x';
+	}
+	
+	private char getPath(char searchingFor[], LinkedList<Character> avoid) {
+		
+		for (int i = 0; i < searchingFor.length; i++) {
+			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, avoid);
+			if (trail.size() > 0) {
+				Point p = trail.get(1);
+				System.out.println("Looking for: "+searchingFor[i]);
+				if(getInfrontPoint().equals(p)) {
+					return 'f';
+				} else {
+					return 'l'; //TODO better logic on rotation?
+				}
+			}
+		}
+		
+		return 0; //default return when failure
 	}
 	
 	// Checks if the agent is stuck leaving and entering a boat

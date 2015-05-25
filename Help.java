@@ -89,7 +89,6 @@ public class Help {
 					parentMap.put(p, v);
 				}
 			}
-			
 			avoid.remove(new Character(' '));//so it doesn't never get off land
 		}
 

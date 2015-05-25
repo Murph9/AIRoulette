@@ -42,7 +42,7 @@ public class Agent {
 	public static Point[] previousPos;
 	public static final int PREVS = 6;
 	
-	public static final int MAX_SIZE = 81; //TODO change back to 165, 
+	public static final int MAX_SIZE = 165; //TODO change back to 165, 
 		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port size)
 	
 	public static char grid[][]; //the map (size to be determined)
@@ -164,7 +164,7 @@ public class Agent {
 		 */
 		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', '*', 'T'));
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
-//		if (inBoat) defaultList.remove(new Character('~'));
+		if (inBoat) defaultList.remove(new Character('~'));
 		
 		
 		if (hasGold) {
@@ -181,7 +181,7 @@ public class Agent {
 			}
 		}
 		
-		char out = getPath(new char[]{'a', 'd', '?', 'T'}, defaultList);
+		char out = getPath(new char[]{'a', 'd', '?'}, defaultList);
 		if (out != 0) {
 			return out;
 		}
@@ -196,10 +196,6 @@ public class Agent {
 			} else {
 				return 'l'; //TODO better logic on rotation?
 			}
-		}
-		
-		if (Stuck()) {
-			defaultList.add(new Character(' '));
 		}
 		
 		out = getPath(new char[]{'B'}, defaultList);
@@ -377,12 +373,17 @@ public class Agent {
 	}
 	
 	private char getPath(char searchingFor[], LinkedList<Character> avoid) {
-		
 		for (int i = 0; i < searchingFor.length; i++) {
+			if (Stuck() && inBoat) {
+				System.out.println("STUCK");
+				avoid.add(new Character(' '));
+			}
 			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, avoid);
 			if (trail.size() > 0) {
 				Point p = trail.get(1);
+				Point d = trail.get(trail.size() - 1);
 				System.out.println("Looking for: "+searchingFor[i]);
+				System.out.println("At: "+ d.x + " " + d.y);
 				if(getInfrontPoint().equals(p)) {
 					return 'f';
 				} else {
@@ -477,19 +478,24 @@ public class Agent {
 	void print(char view[][]) {
 		
 		// Modified view made by Ethan
-		System.out.print("+");
+		System.out.print("  ");
+		for (int i = 0; i < maxJ - minJ; i++) {
+			System.out.print(i);
+		}
+		System.out.println("");
+		System.out.print(" +");
 		for (int i = 0; i < maxJ - minJ; i++) {
 			System.out.print("-");
 		}
 		System.out.println("+");
 		for (int i = minI; i <= maxI; i++) {
-			System.out.print("|");
+			System.out.print(i+"|");
 			for (int j = minJ; j < maxJ; j++) {
 				System.out.print(view[i][j]);
 			}
 			System.out.println("|");
 		}
-		System.out.print("+");
+		System.out.print(" +");
 		for (int i = 0; i < maxJ - minJ; i++) {
 			System.out.print("-");
 		}

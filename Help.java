@@ -90,6 +90,7 @@ public class Help {
 					parentMap.put(p, v);
 				}
 			}
+			avoid.remove(new Character(' '));
 		}
 
 		if (!foundSolution) { //then we may have a problem

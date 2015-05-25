@@ -74,7 +74,6 @@ public class Help {
 			v = Q.poll(); //dequeue
 			
 			//process v
-//			if (Agent.grid[v.y][v.x] == in) {
 			if (isCharWithinRange(v, in, offset)) {
 				foundSolution = true;
 				break;
@@ -90,6 +89,8 @@ public class Help {
 					parentMap.put(p, v);
 				}
 			}
+			
+			avoid.remove(new Character(' '));//so it doesn't never get off land
 		}
 
 		if (!foundSolution) { //then we may have a problem

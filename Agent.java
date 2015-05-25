@@ -42,8 +42,8 @@ public class Agent {
 	public static Point[] previousPos;
 	public static final int PREVS = 6;
 	
-	public static final int MAX_SIZE = 81; //TODO change back to 165, 
-		//suggesting change to 80*2 + 1 + 4 = 165 (because of view port size)
+	public static final int MAX_SIZE = 165; 
+		//max size 80*2 + playerpos 1 + viewport 4 = 165
 	
 	public static char grid[][]; //the map (size to be determined)
 	
@@ -75,7 +75,7 @@ public class Agent {
 	
 	//our method
 	public char get_action(char view[][]) {
-//		/*comment out this line for slowed play
+		/*comment out this line for slowed play
 		try {
 			Thread.sleep(50);
 		} catch (InterruptedException e) {
@@ -146,7 +146,10 @@ public class Agent {
 	private char computeAction() {
 		
 		//if there is no path to where they want to go, try for using boat on path
-			//go to the next thing on the list
+			//where try using a boat is:
+			//TODO if there is water in your path, find the boat that is in that body of water
+		//else go to the next thing on the list
+		
 		//expected list:
 		/* hasGold == true aim for 'H' got goal going home
 		 * try for goal
@@ -154,17 +157,19 @@ public class Agent {
 		 * get bomb
 		 * explore (for ?s) 
 		 * 	then with in 2 range
-		 * cut Trees
+		 *
+		 * cut Trees (lumberjack mode)
 		 * 
 		 * see if using bombs help you get to goal
 		 * see if using bombs help you to get an item
+		 * 
 		 * see if using bombs help you to get ?s
 		 * 
 		 * random or something?
 		 */
 		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', '*', 'T'));
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
-//		if (inBoat) defaultList.remove(new Character('~'));
+		if (inBoat) defaultList.remove(new Character('~'));
 		
 		
 		if (hasGold) {
@@ -194,12 +199,8 @@ public class Agent {
 			if(getInfrontPoint().equals(p)) {
 				return 'f';
 			} else {
-				return 'l'; //TODO better logic on rotation?
+				return 'l';
 			}
-		}
-		
-		if (Stuck()) {
-			defaultList.add(new Character(' '));
 		}
 		
 		out = getPath(new char[]{'B'}, defaultList);
@@ -216,179 +217,64 @@ public class Agent {
 			//see if you can use bombs to get an item
 			//see if you can use bombs to get a ?
 
-		/*
 		
-		if (hasGold) { //then go home
-			//get move then return
-			
-			LinkedList<Point> trail = Help.bfs4Char('H', 0, defaultList);
-			if (!trail.isEmpty()) {
-				Point p = trail.get(1);
-				System.out.println("Have gold, going home, " + pos.x + "|" + pos.y +", " + trail);
-				
-				if(getInfrontPoint().equals(p)) {
-					return 'f';
-				} else {
-					return 'l';
-				}
-			}
-		}
-		
-		//try for goal
-		if (goldPos != null) { //we have seen it
-
-			LinkedList<Point> trail = Help.bfs4Char('g', 0, defaultList);
-			if (trail.isEmpty()) {
-				//we can't reach the goal without breaking '*'s now...
-				defaultList.remove(new Character('*'));
-				
-				trail = Help.bfs4Char('g', 2, defaultList);
-				
-				if (trail.size() == 1) { //only pos and dest
-					System.out.println("Going against knowledge and using bomb, " + pos.x + "|" + pos.y);
-					if (getInfrontChar() == '*') {
-						return 'b'; //use a bomb
-					} else {
-						return 'l'; //or rotate till we get there
-					}
-				}
-				
-				Point p = trail.get(1);
-				System.out.println("Know gold exists but can't get there, " + pos.x + "|" + pos.y +", " + p);
-				
-				if(getInfrontPoint().equals(p)) {
-					return 'f';
-				} else {
-					return 'l';
-				}
-			}
-			
-			Point p = trail.get(1);
-			System.out.println("Know gold exists, " + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		if (hasAxe && gridContains('T')) {
-			LinkedList<Point> trail = Help.bfs4Char('T', 0, defaultList);
-			Point p = trail.get(1);
-			System.out.println("Have axe on route to T, " + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		//if can see an item try to go to it
-		//else if can explore some reachable '?'
-		//else
-			//try axe
-			//try boat
-			//try bombs
-		
-		if (gridContains('a')) {
-			LinkedList<Point> trail = Help.bfs4Char('a', 0, defaultList);
-			Point p = trail.get(1);
-			System.out.println("Getting axe, " + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		if (gridContains('d')) {
-			LinkedList<Point> trail = Help.bfs4Char('d', 0, defaultList);
-			Point p = trail.get(1);
-			System.out.println("Getting dynamite," + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		if (gridContains('B')) {
-			LinkedList<Point> trail = Help.bfs4Char('B', 0, defaultList);
-			Point p = trail.get(1);
-			System.out.println("Finding boat," + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		if (inBoat) {
-			defaultList.remove(new Character('~'));
-			LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
-			if (Stuck()) {
-				defaultList.add(new Character(' '));
-				trail = Help.bfs4Char('?', 0, defaultList);
-				defaultList.remove(new Character(' '));
-			}
-			Point p = trail.get(1);
-			System.out.println("Using boat looking for ?s," + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		
-		//default explore: 
-		
-		LinkedList<Point> trail = Help.bfs4Char('?', 0, defaultList);
-		if (trail.isEmpty()) {
-			//i.e. the result didn't find a solution
-			trail = Help.bfs4Char('?', 2, defaultList);
-			Point p = trail.get(1);
-			System.out.println("Looking for far reaching ?s," + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-			
-		} else {
-			Point p = trail.get(1);
-			System.out.println("Looking for ?s," + pos.x + "|" + pos.y +", " + p);
-			
-			if(getInfrontPoint().equals(p)) {
-				return 'f';
-			} else {
-				return 'l';
-			}
-		}
-		*/
 		//make sure this line is unreachable code
 //		return 'x';
 	}
 	
 	private char getPath(char searchingFor[], LinkedList<Character> avoid) {
+		LinkedList<Character> a = null;
 		
 		for (int i = 0; i < searchingFor.length; i++) {
-			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, avoid);
+			a = new LinkedList<Character>(avoid);
+			
+			if (inBoat) {
+				a.add(new Character(' '));
+			}
+
+			//try for path with out water 
+			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
 			if (trail.size() > 0) {
 				Point p = trail.get(1);
-				System.out.println("Looking for: "+searchingFor[i]);
+				Point d = trail.get(trail.size() - 1);
+				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
 				if(getInfrontPoint().equals(p)) {
 					return 'f';
 				} else {
-					return 'l'; //TODO better logic on rotation?
+					return 'l';
 				}
 			}
+			
+			//try for path with water
+//			a.remove(new Character('~'));
+		
+//			trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
+//			if (trail.size() > 0) {
+//				Point p = trail.get(1);
+//				if (grid[p.y][p.x] == '~') {
+//					//next spot is water, find the boat for this water.
+//					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
+//					LinkedList<Point> tempPath = Help.bfs4Char(p, 'B', 0, av);
+//					
+//					av.remove(new Character(' '));
+//					av.add(new Character('~'));
+//					p = tempPath.getLast();
+//					tempPath = Help.bfs4Char(pos, grid[p.y][p.x], 0, av);
+//
+//					if (getInfrontPoint().equals(p)) {
+//						return 'f';
+//					} else {
+//						return 'l';
+//					}
+//				}
+//				
+//				
+//				if (getInfrontPoint().equals(p)) {
+//					return 'f';
+//				} else {
+//					return 'l';
+//				}
+//			}
 		}
 		
 		return 0; //default return for failure
@@ -463,7 +349,8 @@ public class Agent {
 		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home (its always here)
 	}
 
-	private boolean gridContains(char in) {
+	/*
+	private boolean gridContains(char in, char stayIn) {
 		for (int i = 0; i < MAX_SIZE; i++) {
 			for (int j = 0; j < MAX_SIZE; j++) {
 				if (grid[i][j] == in) {
@@ -472,47 +359,28 @@ public class Agent {
 			}
 		}
 		return false;
-	}
+	}*/
 	
 	void print(char view[][]) {
 		
 		// Modified view made by Ethan
 		System.out.print("+");
-		for (int i = 0; i < maxJ - minJ; i++) {
+		for (int i = 0; i <= maxJ - minJ; i++) {
 			System.out.print("-");
 		}
 		System.out.println("+");
 		for (int i = minI; i <= maxI; i++) {
 			System.out.print("|");
-			for (int j = minJ; j < maxJ; j++) {
+			for (int j = minJ; j <= maxJ; j++) {
 				System.out.print(view[i][j]);
 			}
 			System.out.println("|");
 		}
 		System.out.print("+");
-		for (int i = 0; i < maxJ - minJ; i++) {
+		for (int i = 0; i <= maxJ - minJ; i++) {
 			System.out.print("-");
 		}
 		System.out.println("+");
-		//
-		
-		/*System.out.print("+");
-		for (int i = 0; i < view.length; i++) {
-			System.out.print("-");
-		}
-		System.out.println("+");
-		for (int i = 0; i < view.length; i++) {
-			System.out.print("|");
-			for (int j = 0; j < view[0].length; j++) {
-				System.out.print(view[i][j]);
-			}
-			System.out.println("|");
-		}
-		System.out.print("+");
-		for (int i = 0; i < view.length; i++) {
-			System.out.print("-");
-		}
-		System.out.println("+");*/
 	}
 
 	//please don't touch below

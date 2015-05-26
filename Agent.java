@@ -181,7 +181,7 @@ public class Agent {
 		
 		if (goldPos != null) {
 			char out = getPath(new char[]{'g'}, defaultList);
-		if (out != 0) {
+			if (out != 0) {
 				return out;
 			}
 		}
@@ -189,10 +189,11 @@ public class Agent {
 		char out = getPath(new char[]{'a', 'd', '?', 'T'}, defaultList);
 		if (out != 0) {
 			return out;
-	}
+		}
 		
 		
 		LinkedList<Point> path = Help.bfs4Char(pos, '?', 2, defaultList);
+		System.out.println("Old bfs called");
 		if (!path.isEmpty()) {
 			Point p = path.get(1);
 			System.out.println("Looking for: ?");
@@ -229,15 +230,20 @@ public class Agent {
 			a = new LinkedList<Character>(avoid);
 			
 			if (inBoat) {
-				a.add(new Character(' '));
+				//a.add(new Character(' '));
 			}
 
-			//try for path with out water 
+			//try for path with out water
+			//if(!a.contains(new Character('~'))) {
+			//	a.add(new Character('~'));
+			//}
 			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
 			if (trail.size() > 0) {
+				System.out.println("getPath 1 tripped");
 				Point p = trail.get(1);
 				Point d = trail.get(trail.size() - 1);
 				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
+				System.out.println("Current Pos: "+pos.x + " " + pos.y);
 				if(getInfrontPoint().equals(p)) {
 					return 'f';
 				} else {
@@ -246,38 +252,96 @@ public class Agent {
 			}
 			
 			//try for path with water
-//			a.remove(new Character('~'));
+			a.remove(new Character('~'));
 		
-//			trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
-//			if (trail.size() > 0) {
-//				Point p = trail.get(1);
-//				if (grid[p.y][p.x] == '~') {
-//					//next spot is water, find the boat for this water.
-//					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
-//					LinkedList<Point> tempPath = Help.bfs4Char(p, 'B', 0, av);
-//					
-//					av.remove(new Character(' '));
-//					av.add(new Character('~'));
-//					p = tempPath.getLast();
-//					tempPath = Help.bfs4Char(pos, grid[p.y][p.x], 0, av);
-//
-//					if (getInfrontPoint().equals(p)) {
-//						return 'f';
-//					} else {
-//						return 'l';
-//					}
-//				}
-//				
-//				
-//				if (getInfrontPoint().equals(p)) {
-//					return 'f';
-//				} else {
-//					return 'l';
-//				}
-//			}
+  			trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
+  			if (trail.size() > 0) {
+  				System.out.println("getPath 2 tripped");
+  				
+  				Point p = getWaterIndex(trail);
+  				int waterIndex = p.x;
+  				int bodyCount = p.y;
+				if (waterIndex != 0) {
+					p = trail.get(waterIndex);
+					System.out.println("Water infront");
+					//next spot is water, find the boat for this water.
+					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
+					LinkedList<Point> tempPath = Help.bfs4Char(p, 'B', 0, av);
+					
+					av.remove(new Character(' '));
+					av.add(new Character('~'));
+					p = tempPath.getLast();
+					tempPath = Help.bfs4Char(pos, grid[p.y][p.x], 0, av);
+					p = tempPath.get(1);
+					
+					System.out.println("Body count = " + bodyCount);
+					
+					/*System.out.println("Current Pos: "+pos.x + " " + pos.y);
+					System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
+					System.out.println("p: " + p.x + " " + p.y);
+					Point d = trail.get(trail.size() - 1);
+					System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);*/
+					if (getInfrontPoint().equals(p)) {
+						return 'f';
+					} else {
+						return 'l';
+					}
+				}
+				p = trail.get(1);
+				System.out.println("Body count = " + bodyCount);
+				/*System.out.println("NOT Water infront");
+				System.out.println("Current Pos: "+pos.x + " " + pos.y);
+				System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
+				System.out.println("p: " + p.x + " " + p.y);
+				Point d = trail.get(trail.size() - 1);
+				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);*/
+				
+				
+				if (getInfrontPoint().equals(p)) {
+					return 'f';
+				} else {
+					return 'l';
+				}
+			}
 		}
 		
 		return 0; //default return for failure
+	}
+	
+	// Gets the index of the first water tile in the trail, tied to p.x and the number of water bodies in path tied to p.y
+	private Point getWaterIndex(LinkedList<Point> trail) {
+		Point index = new Point(0, 0);
+		boolean water = false;
+		int count = 0;
+		for (int i = 1; i < trail.size(); i++) {
+			Point p = trail.get(i);
+			if (grid[p.y][p.x] == '~' && index.x == 0) {
+				index.x = i;
+			}
+			if (grid[p.y][p.x] == '~' && water == false) {
+				water = true;
+				count++;
+			}
+			if (grid[p.y][p.x] == ' ' && water == true) {
+				water = false;
+				count++;
+			}
+		}
+		index.y = count;
+		return index;
+	}
+	
+	// Should check if two waters tiles are on the same body of water
+	private boolean checkBodyConnect(Point a, Point b, LinkedList<Character> avoid) {
+		if (!avoid.contains(' ')) {
+			avoid.add(' ');
+		}
+		avoid.remove('~');
+		LinkedList<Point> tempPath = Help.bfs4Point(a, b, 0, avoid);
+		if (tempPath.size() > 0) {
+			return true;
+		}
+		return false;
 	}
 	
 	// Checks if the agent is stuck leaving and entering a boat

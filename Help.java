@@ -89,7 +89,7 @@ public class Help {
 					parentMap.put(p, v);
 				}
 			}
-			avoid.remove(new Character(' '));//so it doesn't never get off land
+			//avoid.remove(new Character(' '));//so it doesn't never get off land
 		}
 
 		if (!foundSolution) { //then we may have a problem
@@ -251,5 +251,61 @@ public class Help {
 			array[i] = array[i-1];
 		}
 		
+	}
+	
+	// TEMPORARY
+	public static LinkedList<Point> bfs4Point(Point start, Point end, int offset, LinkedList<Character> avoid) {
+		if (avoid == null) {
+			avoid = new LinkedList<Character>(); //just so its search able but useless
+		}
+
+		LinkedList<Point> Q = new LinkedList<Point>();
+		HashMap<Point, Point> parentMap = new HashMap<Point, Point>();
+		
+		Point v = null;
+		boolean foundSolution = false;
+		
+		Q.add(start); //enqueue
+		while (!Q.isEmpty()) {
+			v = Q.poll(); //dequeue
+			
+			//process v
+			for (Point p : getNeighbours(v)) {
+				if (p.x == end.x && p.y == end.y) {
+					foundSolution = true;
+				}
+			}
+			
+			if (foundSolution) {
+				break;
+			}
+						
+			for (Point p : getNeighbours(v)) {
+				if (avoid.contains(Agent.grid[p.y][p.x])) {
+					continue;
+				}
+				
+				if (!parentMap.containsKey(p)) {
+					Q.add(p);
+					parentMap.put(p, v);
+				}
+			}
+			//avoid.remove(new Character(' '));//so it doesn't never get off land
+		}
+
+		if (!foundSolution) { //then we may have a problem
+			return new LinkedList<Point>();
+		}
+		
+		
+		LinkedList<Point> trail = new LinkedList<Point>();
+		trail.add(v);
+
+		while(!v.equals(start)) {
+			trail.addFirst(parentMap.get(v));
+			v = parentMap.get(v);
+		}
+		
+		return trail;
 	}
 }

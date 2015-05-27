@@ -269,14 +269,8 @@ public class Help {
 		while (!Q.isEmpty()) {
 			v = Q.poll(); //dequeue
 			
-			//process v
-			for (Point p : getNeighbours(v)) {
-				if (p.x == end.x && p.y == end.y) {
-					foundSolution = true;
-				}
-			}
-			
-			if (foundSolution) {
+			if (v.x == end.x && v.y == end.y) {
+				foundSolution = true;
 				break;
 			}
 						

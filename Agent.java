@@ -278,12 +278,20 @@ public class Agent {
 					System.out.println("Water infront");
 					//next spot is water, find the boat for this water.
 					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
-					LinkedList<Point> tempPath = Help.bfs4Char(p, 'B', 0, av);
+					LinkedList<Point> tempPath;
+					Point boatSpot = findBoat(p);
+					if (boatSpot != null) {
+						tempPath = Help.bfs4Point(p, boatSpot, 0, av);
+					} else {
+						tempPath = Help.bfs4Char(p, 'B', 0, av);
+					}
 					
 					av.remove(new Character(' '));
 					av.add(new Character('~'));
 					p = tempPath.getLast();
-					tempPath = Help.bfs4Char(pos, grid[p.y][p.x], 0, av);
+					System.out.println("Current Pos: "+pos.x + " " + pos.y);
+					System.out.println("BOAT AT: " + p.x + " " + p.y);
+					tempPath = Help.bfs4Point(pos, p, 0, av);
 					p = tempPath.get(1);
 					
 					System.out.println("Body count = " + bodyCount);
@@ -341,6 +349,18 @@ public class Agent {
 		}
 		index.y = count;
 		return index;
+	}
+	
+	// Finds a boat for a water tile
+	private Point findBoat(Point waterTile) {
+		LinkedList<Character> avoid = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
+		LinkedList<Point> tempPath = Help.bfs4Char(waterTile, 'B', 0, avoid);
+		Point p = null;
+		if (tempPath.size() > 0) {
+			p = tempPath.getLast();
+		}
+		return p;
+		
 	}
 	
 	// Should check if two waters tiles are on the same body of water

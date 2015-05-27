@@ -234,13 +234,25 @@ public class Agent {
 			}
 
 			//try for path with out water
-			//if(!a.contains(new Character('~'))) {
-			//	a.add(new Character('~'));
-			//}
 			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
+			Point temp = getWaterIndex(trail);
 			if (trail.size() > 0) {
 				System.out.println("getPath 1 tripped");
 				Point p = trail.get(1);
+				
+				////
+				if (inBoat && temp.x != 0) {
+					if (grid[p.y][p.x] == new Character(' ') || grid[p.y][p.x] == new Character('T')) {
+						System.out.println("SPECIAL CASE");
+						if (checkBodyConnect(pos, trail.get(temp.x))) {
+							LinkedList<Character> av = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
+							trail = Help.bfs4Point(pos, trail.get(temp.x), 0, av);
+							p = trail.get(1);
+						}
+					}
+				}
+				////
+				
 				Point d = trail.get(trail.size() - 1);
 				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
 				System.out.println("Current Pos: "+pos.x + " " + pos.y);
@@ -332,11 +344,8 @@ public class Agent {
 	}
 	
 	// Should check if two waters tiles are on the same body of water
-	private boolean checkBodyConnect(Point a, Point b, LinkedList<Character> avoid) {
-		if (!avoid.contains(' ')) {
-			avoid.add(' ');
-		}
-		avoid.remove('~');
+	private boolean checkBodyConnect(Point a, Point b) {
+		LinkedList<Character> avoid = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
 		LinkedList<Point> tempPath = Help.bfs4Point(a, b, 0, avoid);
 		if (tempPath.size() > 0) {
 			return true;

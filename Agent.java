@@ -10,6 +10,13 @@ import java.awt.Point;
 import java.io.*;
 import java.net.*;
 
+/*
+	<Patrician> what does your robot do, sam ?
+	<bovril> it collects data about the surrounding environment, then discards it and drives into walls
+	— Bash.org quote #240849
+*/
+
+
 public class Agent {
 
 	public static final char[] options = {'f', 'l', 'r', 'c', 'b'};
@@ -38,10 +45,6 @@ public class Agent {
 		//starts on 0, so the inital direction is up
 	public static Point pos; //current position of the agent
 	
-	// NEW VARIABLE
-	public static Point[] previousPos;
-	public static final int PREVS = 6;
-	
 	public static final int MAX_SIZE = 165; 
 		//max size 80*2 + playerpos 1 + viewport 4 = 165
 	
@@ -55,8 +58,6 @@ public class Agent {
 		orientation = 0;
 		goldPos = null;
 		pos = new Point(MAX_SIZE/2, MAX_SIZE/2); //should = 80 if (MAX_SIZE == 161)
-		previousPos = new Point[PREVS];
-		Help.initArray(previousPos);
 		
 		//Variables to make the printout cleaner
 		minI = MAX_SIZE;
@@ -75,7 +76,7 @@ public class Agent {
 	
 	//our method
 	public char get_action(char view[][]) {
-		/*comment out this line for slowed play
+//		/*comment out this line for slowed play
 		try {
 			Thread.sleep(50);
 		} catch (InterruptedException e) {
@@ -110,16 +111,12 @@ public class Agent {
 		case 'l': orientation--; break; //think right to up which is 1 to 0
 		case 'r': orientation++; break; //think up to right which is 0 to 1
 		case 'f':
-			// add things to the previous pos array
-			Help.arrayShift(Agent.previousPos);
-			Agent.previousPos[0] = new Point(Agent.pos.x, Agent.pos.y); //avoid giving the reference
-			
 			char ni = getInfrontChar();
 			if (ni == 'T' || ni == '*') break; //we won't move so don't change the agent pos
 			if (ni == '~' && !inBoat) 	break; //see water, but no boat, stop
 			if (ni == 'g') hasGold = true; goldPos = null;
 			if (ni == 'a') hasAxe = true;
-			if (ni == 'b') numBombs++;
+			if (ni == 'd') numBombs++;
 			if (ni == 'B') inBoat = true;
 			if (ni == ' ' && inBoat) inBoat = false;
 			
@@ -139,23 +136,18 @@ public class Agent {
 		
 		moveCount++;
 		System.out.println("Chose: " + c + ", Infront '" + getInfrontChar() +"', Move counter: " + moveCount);
+		
 		return c;
 	}
 	
 	//the meat of the code
 	private char computeAction() {
-		
-		//if there is no path to where they want to go, try for using boat on path
-		//where try using a boat is:
-			//TODO if there is water in your path, find the boat that is in that body of water
-		//else go to the next thing on the list
-	
-		//expected list:
+		//Method list:
 		/* hasGold == true aim for 'H' got goal going home
 		 * try for goal
 		 * get the axe
 		 * get bomb
-	 * explore (for ?s) 
+		 * explore (for ?s) 
 		 * 	then with in 2 range
 		 *
 		 * cut Trees (lumberjack mode)
@@ -186,17 +178,16 @@ public class Agent {
 			}
 		}
 		
-		char out = getPath(new char[]{'a', 'd', '?', 'T'}, defaultList);
+		char out = getPath(new char[]{'a', 'd', '?'}, defaultList);
 		if (out != 0) {
 			return out;
 		}
 		
-		
 		LinkedList<Point> path = Help.bfs4Char(pos, '?', 2, defaultList);
-		System.out.println("Old bfs called");
+//		System.out.println("Scraping the barrel of options");
 		if (!path.isEmpty()) {
 			Point p = path.get(1);
-			System.out.println("Looking for: ?");
+//			System.out.println("Looking for: ?");
 			if(getInfrontPoint().equals(p)) {
 				return 'f';
 			} else {
@@ -204,20 +195,21 @@ public class Agent {
 			}
 		}
 		
+		defaultList.remove(new Character('*'));
+		out = getPathThroughWall(new char[]{'g', 'a', 'd', '?'}, defaultList);
+		if (out != 0) {
+			return out;
+		}
+
 		out = getPath(new char[]{'B'}, defaultList);
 		if (out != 0) {
 			return out;
 		}
 		
+
 		System.out.println("so random:?");
 		Random r = new Random();
 		return options[r.nextInt(3)];
-		
-		//get paths for bombs:
-			//see if you can use bombs to get you to goal
-			//see if you can use bombs to get an item
-			//see if you can use bombs to get a ?
-
 		
 		//make sure this line is unreachable code
 //		return 'x';
@@ -229,21 +221,17 @@ public class Agent {
 		for (int i = 0; i < searchingFor.length; i++) {
 			a = new LinkedList<Character>(avoid);
 			
-			if (inBoat) {
-				//a.add(new Character(' '));
-			}
-
 			//try for path with out water
 			LinkedList<Point> trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
 			Point temp = getWaterIndex(trail);
 			if (trail.size() > 0) {
-				System.out.println("getPath 1 tripped");
+//				System.out.println("getPath 1 tripped");
 				Point p = trail.get(1);
 				
 				////
 				if (inBoat && temp.x != 0) {
 					if (grid[p.y][p.x] == new Character(' ') || grid[p.y][p.x] == new Character('T')) {
-						System.out.println("SPECIAL CASE");
+//						System.out.println("SPECIAL CASE");
 						if (checkBodyConnect(pos, trail.get(temp.x))) {
 							LinkedList<Character> av = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
 							trail = Help.bfs4Point(pos, trail.get(temp.x), 0, av);
@@ -254,8 +242,8 @@ public class Agent {
 				////
 				
 				Point d = trail.get(trail.size() - 1);
-				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
-				System.out.println("Current Pos: "+pos.x + " " + pos.y);
+//				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
+//				System.out.println("Current Pos: "+pos.x + " " + pos.y);
 				if(getInfrontPoint().equals(p)) {
 					return 'f';
 				} else {
@@ -264,18 +252,21 @@ public class Agent {
 			}
 			
 			//try for path with water
+			if (!gridContains('B')) {
+				continue;
+			}
 			a.remove(new Character('~'));
 		
   			trail = Help.bfs4Char(pos, searchingFor[i], 0, a);
   			if (trail.size() > 0) {
-  				System.out.println("getPath 2 tripped");
+//  				System.out.println("getPath 2 tripped");
   				
   				Point p = getWaterIndex(trail);
   				int waterIndex = p.x;
   				int bodyCount = p.y;
 				if (waterIndex != 0) {
 					p = trail.get(waterIndex);
-					System.out.println("Water infront");
+//					System.out.println("Water infront");
 					//next spot is water, find the boat for this water.
 					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
 					LinkedList<Point> tempPath;
@@ -285,16 +276,16 @@ public class Agent {
 					} else {
 						tempPath = Help.bfs4Char(p, 'B', 0, av);
 					}
-					
+					if (tempPath.size() < 1) {
+						continue;
+					}
 					av.remove(new Character(' '));
 					av.add(new Character('~'));
 					p = tempPath.getLast();
-					System.out.println("Current Pos: "+pos.x + " " + pos.y);
-					System.out.println("BOAT AT: " + p.x + " " + p.y);
+//					System.out.println("Current Pos: "+pos.x + " " + pos.y);
+//					System.out.println("BOAT AT: " + p.x + " " + p.y);
 					tempPath = Help.bfs4Point(pos, p, 0, av);
 					p = tempPath.get(1);
-					
-					System.out.println("Body count = " + bodyCount);
 					
 					/*System.out.println("Current Pos: "+pos.x + " " + pos.y);
 					System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
@@ -308,7 +299,120 @@ public class Agent {
 					}
 				}
 				p = trail.get(1);
-				System.out.println("Body count = " + bodyCount);
+				/*System.out.println("NOT Water infront");
+				System.out.println("Current Pos: "+pos.x + " " + pos.y);
+				System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
+				System.out.println("p: " + p.x + " " + p.y);
+				Point d = trail.get(trail.size() - 1);
+				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);*/
+				
+				if (getInfrontPoint().equals(p)) {
+					return 'f';
+				} else {
+					return 'l';
+				}
+			}
+		}
+		
+		return 0; //default return for failure
+	}
+	
+	
+	//looks through walls
+	private char getPathThroughWall(char searchingFor[], LinkedList<Character> avoid) {
+		
+		LinkedList<Character> a = null;
+		
+		for (int i = 0; i < searchingFor.length; i++) {
+			a = new LinkedList<Character>(avoid);
+
+			//try for path with out water
+			LinkedList<Point> trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+			for (int j = 0; j < trail.size(); j++) {
+				System.out.print(grid[trail.get(j).y][trail.get(j).x]);
+			}
+			System.out.println("'path end'");
+			Point temp = getWaterIndex(trail);
+			if (trail.size() > 0) {
+				Point p = trail.get(1);
+				
+				////
+				if (inBoat && temp.x != 0) {
+					if (grid[p.y][p.x] == new Character(' ') || grid[p.y][p.x] == new Character('T')) {
+//						System.out.println("SPECIAL CASE");
+						if (checkBodyConnect(pos, trail.get(temp.x))) {
+							LinkedList<Character> av = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
+							trail = Help.bfs4Point(pos, trail.get(temp.x), 0, av);
+							p = trail.get(1);
+						}
+					}
+				}
+				////
+				
+				Point d = trail.get(trail.size() - 1);
+//				System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);
+//				System.out.println("Current Pos: "+pos.x + " " + pos.y);
+				if(getInfrontPoint().equals(p)) {
+					if (grid[p.y][p.x] == '*'){
+						return 'b';
+					}
+					return 'f';
+				} else {
+					return 'l';
+				}
+			}
+			
+			//try for path with water
+			if (!gridContains('B')) {
+				continue;
+			}
+			a.remove(new Character('~'));
+		
+  			trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+  			if (trail.size() > 0) {
+//  				System.out.println("Trying for " + searchingFor[i]+" with a boat");
+  				
+  				Point p = getWaterIndex(trail);
+  				int waterIndex = p.x;
+  				int bodyCount = p.y;
+				if (waterIndex != 0) {
+					p = trail.get(waterIndex);
+//					System.out.println("Water infront");
+					//next spot is water, find the boat for this water.
+					LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
+					LinkedList<Point> tempPath;
+					Point boatSpot = findBoat(p);
+					if (boatSpot != null) {
+						tempPath = Help.bfs4Point(p, boatSpot, 0, av);
+					} else {
+						tempPath = Help.bfs4Char(p, 'B', 0, av);
+					}
+					if (tempPath.size() < 1) {
+						continue;
+					}
+					av.remove(new Character(' '));
+					av.add(new Character('~'));
+					p = tempPath.getLast();
+//					System.out.println("Current Pos: "+pos.x + " " + pos.y);
+//					System.out.println("BOAT AT: " + p.x + " " + p.y);
+					tempPath = Help.bfs4Point(pos, p, 0, av);
+					p = tempPath.get(1);
+					
+					/*System.out.println("Current Pos: "+pos.x + " " + pos.y);
+					System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
+					System.out.println("p: " + p.x + " " + p.y);
+					Point d = trail.get(trail.size() - 1);
+					System.out.println("Looking for: "+searchingFor[i] + ", At: "+ d.x + " " + d.y);*/
+					if (getInfrontPoint().equals(p)) {
+						if (grid[p.y][p.x] == '*'){
+							return 'b';
+						}
+						return 'f';
+					} else {
+						return 'l';
+					}
+				}
+				p = trail.get(1);
 				/*System.out.println("NOT Water infront");
 				System.out.println("Current Pos: "+pos.x + " " + pos.y);
 				System.out.println("Infront: " + getInfrontPoint().x + " " + getInfrontPoint().y);
@@ -325,7 +429,8 @@ public class Agent {
 			}
 		}
 		
-		return 0; //default return for failure
+		
+		return 0;
 	}
 	
 	// Gets the index of the first water tile in the trail, tied to p.x and the number of water bodies in path tied to p.y
@@ -370,24 +475,6 @@ public class Agent {
 		if (tempPath.size() > 0) {
 			return true;
 		}
-		return false;
-	}
-	
-	// Checks if the agent is stuck leaving and entering a boat
-	private boolean Stuck() {
-		int count = 0;
-		for (int i = 0; i < PREVS; i++) {
-			// odd positions only
-			if (i%2 == 1) {
-				if (Agent.pos.x == Agent.previousPos[i].x && Agent.pos.y == Agent.previousPos[i].y) {
-					count++;
-				}
-			}
-		}
-		if (count == PREVS/2) {
-			return true;
-		}
-		
 		return false;
 	}
 	
@@ -442,8 +529,7 @@ public class Agent {
 		grid[MAX_SIZE/2][MAX_SIZE/2] = 'H'; //for home (its always here)
 	}
 
-	/*
-	private boolean gridContains(char in, char stayIn) {
+	private boolean gridContains(char in) {
 		for (int i = 0; i < MAX_SIZE; i++) {
 			for (int j = 0; j < MAX_SIZE; j++) {
 				if (grid[i][j] == in) {
@@ -452,7 +538,7 @@ public class Agent {
 			}
 		}
 		return false;
-	}*/
+	}
 	
 	void print(char view[][]) {
 		
@@ -469,6 +555,13 @@ public class Agent {
 			}
 			System.out.println("|");
 		}
+//		for (int j = minJ; j <= maxJ; j++) {
+//			System.out.print("|");
+//			for (int i = minI; i <= maxI; i++) {
+//				System.out.print(view[i][j]);
+//			}
+//			System.out.println("|");
+//		}
 		System.out.print("+");
 		for (int i = 0; i <= maxJ - minJ; i++) {
 			System.out.print("-");

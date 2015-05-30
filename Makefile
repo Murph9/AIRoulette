@@ -1,17 +1,11 @@
-# Makefile
+JAVAC=javac
+sources = $(wildcard *.java)
+classes = $(sources:.java=.class)
 
-CC = gcc
-CFLAGS = -Wall -O3
+all: $(classes)
 
-CSRC = agent.c pipe.c
-HSRC = pipe.h
-OBJ = $(CSRC:.c=.o)
+clean :
+	rm -f *.class
 
-%o:%c $(HSRC)
-	$(CC) $(CFLAGS) -c $<
-
-# additional targets
-.PHONY: clean
-
-agent: $(OBJ)
-	$(CC) -lm $(CFLAGS) -o agent $(OBJ)
+%.class : %.java
+	$(JAVAC) -g $<

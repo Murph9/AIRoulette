@@ -10,11 +10,10 @@ import java.awt.Point;
 import java.io.*;
 import java.net.*;
 
-/*
-	<Patrician> what does your robot do, sam ?
-	<bovril> it collects data about the surrounding environment, then discards it and drives into walls
-	— Bash.org quote #240849
-*/
+
+//	<Patrician> what does your robot do, sam ?
+//	<bovril> it collects data about the surrounding environment, then discards it and drives into walls
+//	- Bash.org quote #240849
 
 
 public class Agent {
@@ -98,7 +97,7 @@ public class Agent {
 		}
 		
 		fillGrid(view); //fill in grid.
-		print(grid);
+//		print(grid);
 		char c = computeAction(); //important part
 		
 		char in = getInfrontChar(); //override the computed action if we are facing a tree with an axe

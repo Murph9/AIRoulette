@@ -358,6 +358,10 @@ public class Help {
         	
         	closedSet.add(current);
         	
+        	if (current.getNode() == null) {
+        		System.out.println("NULL");
+        	}
+        	
         	if (isCharWithinRange(current.getNode(), to, 0)) break;
         	
         	for (Point p : getNeighbours(current.getNode())) {
@@ -369,7 +373,7 @@ public class Help {
 				if (Agent.grid[p.y][p.x] == '*') {
 					temp.setGVal(current.getGVal() + 100);
 				}
-				if (Agent.grid[p.y][p.x] == ' ') {
+				if (Agent.grid[p.y][p.x] == ' ' || Agent.grid[p.y][p.x] == '~') {
 					temp.setGVal(current.getGVal() + 1);
 				}
             	

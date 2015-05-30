@@ -8,8 +8,8 @@ public class State {
     Constructs an empty state.
     */
 	public State(Point newNode, int gCost) {
-		Point node = newNode;
-		int g = gCost;
+		node = newNode;
+		g = gCost;
 	}
 	
 	/**

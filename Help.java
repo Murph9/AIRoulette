@@ -18,7 +18,7 @@ public class Help {
 		QueueNode<Point> popped = null;
 		Point curPoint = null;
 		
-		pq.add(new QueueNode<Point>(null, start, 0));
+		pq.add(new QueueNode<Point>(null, start, 0+0));
 		while (!pq.isEmpty()) {
 			popped = pq.poll();
 			curPoint = popped.e;
@@ -36,11 +36,7 @@ public class Help {
 						continue;
 					}
 					
-					int i = 0;
-					if (Agent.grid[p.y][p.x] == '*') {
-						i = 1;
-					}
-					pq.add(new QueueNode<Point>(popped, p, i));
+					pq.add(new QueueNode<Point>(popped, p, 0+0));
 				}
 			}
 		}
@@ -58,7 +54,7 @@ public class Help {
 	
 	public static LinkedList<Point> bfs4CharThroughWall(Point start, char in, int maxWeight, LinkedList<Character> avoid) {
 		if (avoid == null) {
-			avoid = new LinkedList<Character>(); //just so its search able but useless
+			avoid = new LinkedList<Character>(); //just so its searchable but useless (so you can give it null)
 		}
 
 		LinkedList<Point> Q = new LinkedList<Point>();
@@ -81,11 +77,14 @@ public class Help {
 				if (avoid.contains(Agent.grid[p.y][p.x])) {
 					continue;
 				}
+
+				LinkedList<Character> temp = getPath(parentMap, start, p);
+				int occurrences = Collections.frequency(temp, '*');
+				if (occurrences > maxWeight) {
+					continue;
+				}
 				
 				if (!parentMap.containsKey(p)) {
-					if (getWeightofPath(parentMap, start, p) > maxWeight) {
-						continue;
-					}
 					Q.add(p);
 					parentMap.put(p, v);
 				}
@@ -109,18 +108,30 @@ public class Help {
 	}
 	
 	
-	private static int getWeightofPath(HashMap<Point, Point> map, Point start, Point currentP) {
-		int weight = 0;
+	private static LinkedList<Character> getPath(HashMap<Point, Point> map, Point start, Point v) {
+		LinkedList<Character> trail = new LinkedList<Character>();
+		trail.add(Agent.grid[v.y][v.x]);
 
-		while(currentP != null && !currentP.equals(start)) {
-			if (Agent.grid[currentP.y][currentP.x] == '*') {
-				weight++;
-			}
-			currentP = map.get(currentP);
+		while(!v.equals(start) && map.containsKey(v)) {
+			trail.add(Agent.grid[map.get(v).y][map.get(v).x]);
+			v = map.get(v);
 		}
-		if (weight > 1) System.exit(0);
-		return weight;
+		
+		return trail;
 	}
+	
+//	private static int getWeightofPath(HashMap<Point, Point> map, Point start, Point currentP) {
+//		int weight = 0;
+//
+//		while(currentP != null && !currentP.equals(start)) {
+//			if (Agent.grid[currentP.y][currentP.x] == '*') {
+//				weight++;
+//			}
+//			currentP = map.get(currentP);
+//		}
+//		if (weight > 1) System.exit(0);
+//		return weight;
+//	}
 	
 	
 	//special case of bfs that just looks for the closest given char, and returns the first move Point
@@ -313,24 +324,6 @@ public class Help {
 			return 1;
 		}
 	}
-	/*
-	//Initialises array
-	public static void initArray(Point[] array) {
-		Point emptyPoint = new Point(-1, -1);
-		for (int i = 0; i < array.length; i++) {
-			array[i] = emptyPoint;
-		}
-	}
-	
-	// Shifts all elements of an array 1 to the left
-	public static void arrayShift(Point[] array) {
-		for (int i = array.length - 1; i > 0; i--) {
-			array[i] = array[i-1];
-		}
-		
-	}
-	*/
-	
 	
 	public static LinkedList<Point> aStarSearch(Point from, char to, int maxWeight, LinkedList<Character> avoid) {
         Queue<State> openSet = new PriorityQueue<State>(1,

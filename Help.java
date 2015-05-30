@@ -330,4 +330,112 @@ public class Help {
 		
 	}
 	*/
+	
+	
+	public static LinkedList<Point> aStarSearch(Point from, char to, int maxWeight, LinkedList<Character> avoid) {
+        Queue<State> openSet = new PriorityQueue<State>(1,
+        		new Comparator<State>() {
+
+				@Override
+				public int compare(State cost1, State cost2) {
+					return cost1.getGVal() - cost2.getGVal();
+				}
+        });
+        
+        ArrayList<State> closedSet = new ArrayList<State>();
+        LinkedList<Point> expanded = new LinkedList<Point>();
+        
+        State first = new State(from, 0);
+        openSet.add(first);
+        
+        int i = 0;
+
+        while (!openSet.isEmpty()) {
+        	State current = new State(new Point(0, 0), 0);
+        	current.setNode(openSet.peek().getNode());
+        	current.setGVal(openSet.peek().getGVal());
+        	openSet.remove();
+        	
+        	closedSet.add(current);
+        	
+        	if (isCharWithinRange(current.getNode(), to, 0)) break;
+        	
+        	for (Point p : getNeighbours(current.getNode())) {
+				if (avoid.contains(Agent.grid[p.y][p.x])) {
+					continue;
+				}
+				
+				State temp = new State(p, current.getGVal());
+				if (Agent.grid[p.y][p.x] == '*') {
+					temp.setGVal(current.getGVal() + 100);
+				}
+				if (Agent.grid[p.y][p.x] == ' ') {
+					temp.setGVal(current.getGVal() + 1);
+				}
+            	
+            	if (checkClosedSet(closedSet, temp.getNode()) == false 
+            			&& checkOpenSet(openSet, temp.getNode(), temp.getGVal()) == false) {
+            		openSet.add(temp);
+            	}
+			}
+        }
+        
+        if (closedSet.get(closedSet.size() - 1).getGVal() > maxWeight) {
+        	System.out.println("Too HEAVY");
+        	return expanded;
+        }
+        
+        for (i = 0; i < closedSet.size(); i++) {
+        	expanded.add(closedSet.get(i).getNode());
+        }
+            
+        return expanded;
+    }
+    
+    /**
+     * Checks the open set for a node, and updates it with a better value if found
+     * @param set the open set
+     * @param name name of the city
+     * @param gVal g value of the path
+     * @return true if found, false otherwise
+     */
+    private static boolean checkOpenSet (Queue<State> set, Point name, int gVal) {
+    	ArrayList<State> list = new ArrayList<State>();
+    	State temp = new State(new Point(0, 0), 0);
+    	int i = 0;
+    	
+    	while (!set.isEmpty()) {
+    		list.add(set.remove());
+    	}
+    	set.addAll(list);
+    	
+    	for(i = 0; i < list.size(); i++) {
+    		temp = list.get(i);
+    		
+    		if(temp.getNode().x == name.x && temp.getNode().y == name.y && temp.getGVal() > gVal) {
+    			set.remove(temp);
+    			temp.setGVal(gVal);
+    			set.add(temp);
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
+    /**
+     * Determines if a State is in the closed set
+     * @param set the closed set
+     * @param name the name of the state
+     * @return true if found false otherwise
+     */
+    private static boolean checkClosedSet (ArrayList<State> set, Point name) {
+    	int i = 0;
+    	
+    	for (i = 0; i < set.size(); i++) {
+    		if (set.get(i).getNode().x == name.x && set.get(i).getNode().y == name.y) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
 }

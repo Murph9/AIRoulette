@@ -77,11 +77,11 @@ public class Agent {
 	//our method
 	public char get_action(char view[][]) {
 //		/*comment out this line for slowed play
-		try {
-			Thread.sleep(50);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			Thread.sleep(50);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//		}
 //		*/
 
 		//move the incoming view so we can interperet it
@@ -327,7 +327,7 @@ public class Agent {
 			a = new LinkedList<Character>(avoid);
 
 			//try for path with out water
-			LinkedList<Point> trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+			LinkedList<Point> trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
 			for (int j = 0; j < trail.size(); j++) {
 				System.out.print(grid[trail.get(j).y][trail.get(j).x]);
 			}
@@ -368,7 +368,7 @@ public class Agent {
 			}
 			a.remove(new Character('~'));
 		
-  			trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+  			trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
   			if (trail.size() > 0) {
 //  				System.out.println("Trying for " + searchingFor[i]+" with a boat");
   				

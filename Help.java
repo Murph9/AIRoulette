@@ -10,46 +10,46 @@ public class Help {
 	
 	//will require some kind of convert to action sequence
 		//note that it uses the java.awt.Point class which contains 2 ints
-	public static LinkedList<Point> aStar(Point start, Point dest, int maxWeight, LinkedList<Character> avoid) {
-		PriorityQueue<QueueNode<Point>> pq = new PriorityQueue<QueueNode<Point>>();
-		
-		HashSet<QueueNode<Point>> seen = new HashSet<QueueNode<Point>>();
-		
-		QueueNode<Point> popped = null;
-		Point curPoint = null;
-		
-		pq.add(new QueueNode<Point>(null, start, 0+0));
-		while (!pq.isEmpty()) {
-			popped = pq.poll();
-			curPoint = popped.e;
-			
-			if (!seen.contains(popped)) {
-				seen.add(popped);
-			}
-			
-			if (curPoint.equals(dest)) { //we are done here
-				break;
-			} else {
-				
-				for (Point p : getNeighbours(curPoint)) {
-					if (seen.contains(p)) {
-						continue;
-					}
-					
-					pq.add(new QueueNode<Point>(popped, p, 0+0));
-				}
-			}
-		}
-
-		LinkedList<Point> trail = new LinkedList<Point>();
-		QueueNode<Point> cur = popped;
-		while(cur != null) {
-			trail.addFirst(cur.e);
-			cur = cur.parent;	
-		}
-		
-		return trail;
-	}
+//	public static LinkedList<Point> aStar(Point start, Point dest, int maxWeight, LinkedList<Character> avoid) {
+//		PriorityQueue<QueueNode<Point>> pq = new PriorityQueue<QueueNode<Point>>();
+//		
+//		HashSet<QueueNode<Point>> seen = new HashSet<QueueNode<Point>>();
+//		
+//		QueueNode<Point> popped = null;
+//		Point curPoint = null;
+//		
+//		pq.add(new QueueNode<Point>(null, start, 0+0));
+//		while (!pq.isEmpty()) {
+//			popped = pq.poll();
+//			curPoint = popped.e;
+//			
+//			if (!seen.contains(popped)) {
+//				seen.add(popped);
+//			}
+//			
+//			if (curPoint.equals(dest)) { //we are done here
+//				break;
+//			} else {
+//				
+//				for (Point p : getNeighbours(curPoint)) {
+//					if (seen.contains(p)) {
+//						continue;
+//					}
+//					
+//					pq.add(new QueueNode<Point>(popped, p, 0+0));
+//				}
+//			}
+//		}
+//
+//		LinkedList<Point> trail = new LinkedList<Point>();
+//		QueueNode<Point> cur = popped;
+//		while(cur != null) {
+//			trail.addFirst(cur.e);
+//			cur = cur.parent;	
+//		}
+//		
+//		return trail;
+//	}
 
 	
 	public static LinkedList<Point> bfs4CharThroughWall(Point start, char in, int maxWeight, LinkedList<Character> avoid) {
@@ -310,26 +310,27 @@ public class Help {
 
 
 	//Priority queue node
-	static class QueueNode<E> implements Comparable<QueueNode<E>> {
-		QueueNode<E> parent;
-		E e;
-		double weight; //although its probably an int
-		
-		QueueNode (QueueNode<E> parent, E e, double weight) {
-			this.parent = parent;
-			this.e = e;
-			this.weight = weight;
-		}
-		
-		@Override
-		public int compareTo(QueueNode<E> arg0) {
-			if (this.weight <= arg0.weight) {
-				return -1;
-			}
-			return 1;
-		}
-	}
+//	static class QueueNode<E> implements Comparable<QueueNode<E>> {
+//		QueueNode<E> parent;
+//		E e;
+//		double weight; //although its probably an int
+//		
+//		QueueNode (QueueNode<E> parent, E e, double weight) {
+//			this.parent = parent;
+//			this.e = e;
+//			this.weight = weight;
+//		}
+//		
+//		@Override
+//		public int compareTo(QueueNode<E> arg0) {
+//			if (this.weight <= arg0.weight) {
+//				return -1;
+//			}
+//			return 1;
+//		}
+//	}
 	
+	// A star search.  MaxWeight is the number of bombs the agent has
 	public static LinkedList<Point> aStarSearch(Point from, char to, int maxWeight, LinkedList<Character> avoid) {
         Queue<State> openSet = new PriorityQueue<State>(1,
         		new Comparator<State>() {

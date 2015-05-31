@@ -10,6 +10,24 @@ import java.awt.Point;
 import java.io.*;
 import java.net.*;
 
+/*
+ * Group 55 - Ethan Morgan (z3459802, emor680) and Jake Murphy (z3461173, jhmu917)
+ * Briefly describe how your program works, including any algorithms and data structures employed, and explain any design decisions you made along the way. 
+ * 
+ * Our program works in stages.  Using a Breadth First Search, it looks for a path to the following things, in order of priority:
+ * 	Home (only if it has the gold)
+ * 	gold (only if it knows where it is)
+ * 	axe
+ * 	bomb
+ * 	Unknown area (denoted by ?)
+ * Within its attempt to find a path, it first tries to find a path over land.  If unable, it attempts to find one using a boat, to go over water.
+ * If it is still unable to find a clear path, it attempts to find one through walls, using a 0 heuristic AStar search algorithm to find the path
+ * that goes through a few walls possible.
+ * For the AStar algorithm, we had to create a State class, to hold the map points as well as the weight of the path taken so far.
+ * A major change in out design was to change the code from attempting to find a new path using the BFS every time it moved, to finding a single path,
+ * staying on it until it had finished its move and only then re-searching.  This change greatly increased the speed of our code, reducing the runtime.
+ * 
+ */
 
 //	<Patrician> what does your robot do, sam ?
 //	<bovril> it collects data about the surrounding environment, then discards it and drives into walls
@@ -251,20 +269,23 @@ public class Agent {
 	
 	private boolean setPath(char searchingFor[], LinkedList<Character> avoid, int offset) {
 		LinkedList<Character> a = null;
+		int waterIndex = 0;
 		
 		a = new LinkedList<Character>(avoid);
 		
 		//try for path with out water
 		LinkedList<Point> trail = Help.bfs4Chars(pos, searchingFor, offset, a);
-		Point temp = getWaterIndex(trail);
+		waterIndex = getWaterIndex(trail);
 		if (trail.size() > 0) {
 			Point p = trail.get(1);
 			
-			if (inBoat && temp.x != 0) {
+			// For when you are in a boat next to a shoreline
+			if (inBoat && waterIndex != 0) {
 				if (grid[p.y][p.x] == new Character(' ') || grid[p.y][p.x] == new Character('T')) {
-					if (checkBodyConnect(pos, trail.get(temp.x))) {
+					if (checkBodyConnect(pos, trail.get(waterIndex))) {
+						// if the water you are on is connected to a body of water further in your trail, go there via water
 						LinkedList<Character> av = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
-						trail = Help.bfs4Point(pos, trail.get(temp.x), 0, av);
+						trail = Help.bfs4Point(pos, trail.get(waterIndex), 0, av);
 					}
 				}
 			}
@@ -282,11 +303,10 @@ public class Agent {
 		trail = Help.bfs4Chars(pos, searchingFor, offset, a);
 		if (trail.size() > 0) {
 			
-			Point p = getWaterIndex(trail);
-			int waterIndex = p.x;
+			Point p;
+			waterIndex = getWaterIndex(trail);
 			if (waterIndex != 0) {
 				p = trail.get(waterIndex);
-				//next spot is water, find the boat for this water.
 				LinkedList<Character> av = new LinkedList<Character>(Arrays.asList(' ', '*', '.', 'T'));
 				LinkedList<Point> tempPath;
 				Point boatSpot = findBoat(p);
@@ -325,6 +345,7 @@ public class Agent {
 	private char getPathThroughWall(char searchingFor[], LinkedList<Character> avoid) {
 		
 		LinkedList<Character> a = null;
+		int waterIndex = 0;
 		
 		for (int i = 0; i < searchingFor.length; i++) {
 			a = new LinkedList<Character>(avoid);
@@ -332,15 +353,16 @@ public class Agent {
 			//try for path with out water
 			LinkedList<Point> trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
 			//LinkedList<Point> trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
-			Point temp = getWaterIndex(trail);
+			waterIndex = getWaterIndex(trail);
 			if (trail.size() > 0) {
 				Point p = trail.get(1);
 				
-				if (inBoat && temp.x != 0) {
+				if (inBoat && waterIndex != 0) {
 					if (grid[p.y][p.x] == new Character(' ') || grid[p.y][p.x] == new Character('T')) {
-						if (checkBodyConnect(pos, trail.get(temp.x))) {
+						if (checkBodyConnect(pos, trail.get(waterIndex))) {
+							// if the water you are on is connected to a body of water further in your trail, go there via water
 							LinkedList<Character> av = new LinkedList<Character>(Arrays.asList('.', ' ', '*', 'T'));
-							trail = Help.bfs4Point(pos, trail.get(temp.x), 0, av);
+							trail = Help.bfs4Point(pos, trail.get(waterIndex), 0, av);
 							p = trail.get(1);
 						}
 					}
@@ -365,8 +387,8 @@ public class Agent {
 			trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
   			if (trail.size() > 0) {
   				
-  				Point p = getWaterIndex(trail);
-  				int waterIndex = p.x;
+  				Point p;
+  				waterIndex = getWaterIndex(trail);
 				if (waterIndex != 0) {
 					p = trail.get(waterIndex);
 					//next spot is water, find the boat for this water.
@@ -414,27 +436,15 @@ public class Agent {
 		return 0;
 	}
 	
-	// Gets the index of the first water tile in the trail, tied to p.x and the number of water bodies in path tied to p.y
-	private Point getWaterIndex(LinkedList<Point> trail) {
-		Point index = new Point(0, 0);
-		boolean water = false;
-		int count = 0;
+	// Gets the index of the first water tile in the trail
+	private int getWaterIndex(LinkedList<Point> trail) {
 		for (int i = 1; i < trail.size(); i++) {
 			Point p = trail.get(i);
-			if (grid[p.y][p.x] == '~' && index.x == 0) {
-				index.x = i;
-			}
-			if (grid[p.y][p.x] == '~' && water == false) {
-				water = true;
-				count++;
-			}
-			if (grid[p.y][p.x] == ' ' && water == true) {
-				water = false;
-				count++;
-			}
+			if (grid[p.y][p.x] == '~') {
+				return i;
+			}	
 		}
-		index.y = count;
-		return index;
+		return 0;
 	}
 	
 	// Finds a boat for a water tile
@@ -522,9 +532,9 @@ public class Agent {
 		return false;
 	}
 	
+	// Prints out the map the agent has of the world
 	void print(char view[][]) {
 		
-		// Modified view made by Ethan
 		System.out.print("+");
 		for (int i = 0; i <= maxJ - minJ; i++) {
 			System.out.print("-");

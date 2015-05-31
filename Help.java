@@ -341,12 +341,11 @@ public class Help {
         });
         
         ArrayList<State> closedSet = new ArrayList<State>();
-        LinkedList<Point> expanded = new LinkedList<Point>();
+        LinkedList<Point> trail = new LinkedList<Point>();
+        HashMap<Point, Point> parentMap = new HashMap<Point, Point>();
         
         State first = new State(from, 0);
         openSet.add(first);
-        
-        int i = 0;
 
         while (!openSet.isEmpty()) {
         	State current = new State(new Point(0, 0), 0);
@@ -361,7 +360,14 @@ public class Help {
         	}
         	
         	char array[] = {to};
-        	if (isCharWithinRange(current.getNode(), array, 0)) break;
+        	if (isCharWithinRange(current.getNode(), array, 0)) {
+        		trail.add(current.getNode());
+        		while(!current.getNode().equals(from)) {
+        			trail.addFirst(parentMap.get(current.getNode()));
+        			current.setNode(parentMap.get(current.getNode()));
+        		}
+        		break;
+        	}
         	
         	for (Point p : getNeighbours(current.getNode())) {
 				if (avoid.contains(Agent.grid[p.y][p.x])) {
@@ -378,21 +384,21 @@ public class Help {
             	
             	if (checkClosedSet(closedSet, temp.getNode()) == false 
             			&& checkOpenSet(openSet, temp.getNode(), temp.getGVal()) == false) {
-            		openSet.add(temp);
+            		if (!parentMap.containsKey(p)) {
+            			openSet.add(temp);
+    					parentMap.put(p, current.getNode());
+    				}
             	}
 			}
         }
         
-        if (closedSet.get(closedSet.size() - 1).getGVal() > maxWeight) {
-        	System.out.println("Too HEAVY");
-        	return expanded;
-        }
+        System.out.println(maxWeight);
         
-        for (i = 0; i < closedSet.size(); i++) {
-        	expanded.add(closedSet.get(i).getNode());
+        for (int j = 0; j < trail.size(); j++) {
+        	System.out.println(Agent.grid[trail.get(j).y][trail.get(j).x]);
         }
             
-        return expanded;
+        return trail;
     }
     
     /**

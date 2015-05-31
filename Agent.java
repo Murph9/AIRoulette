@@ -234,7 +234,7 @@ public class Agent {
 	}
 	
 	private char tryUsingBombs() {
-		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', 'T'));
+		LinkedList<Character> defaultList = new LinkedList<Character>(Arrays.asList('.', '~', 'T', '?'));
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
 		if (inBoat) defaultList.remove(new Character('~'));
 		
@@ -330,8 +330,8 @@ public class Agent {
 			a = new LinkedList<Character>(avoid);
 
 			//try for path with out water
-//			LinkedList<Point> trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
-			LinkedList<Point> trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+			LinkedList<Point> trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
+			//LinkedList<Point> trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
 			Point temp = getWaterIndex(trail);
 			if (trail.size() > 0) {
 				Point p = trail.get(1);

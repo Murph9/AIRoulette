@@ -238,6 +238,8 @@ public class Agent {
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
 		if (inBoat) defaultList.remove(new Character('~'));
 		
+		System.out.println("TRYING TO USE BOMBS");
+		
 		//look to use bombs
 		char temp = getPathThroughWall(new char[]{'g', 'a', 'd', '?'}, defaultList);
 		if (temp != 0) {
@@ -308,6 +310,7 @@ public class Agent {
 				}
 				
 				tempPath.removeFirst();
+				System.out.println(grid[tempPath.getLast().y][tempPath.getLast().x]);
 				path = tempPath;
 				return true;
 			}
@@ -362,7 +365,7 @@ public class Agent {
 			}
 			a.remove(new Character('~'));
 		
-			trail = Help.bfs4CharThroughWall(pos, searchingFor[i], numBombs, a);
+			trail = Help.aStarSearch(pos, searchingFor[i], numBombs, a);
   			if (trail.size() > 0) {
   				
   				Point p = getWaterIndex(trail);
@@ -386,6 +389,9 @@ public class Agent {
 					av.add(new Character('~'));
 					p = tempPath.getLast();
 					tempPath = Help.bfs4Point(pos, p, 0, av);
+					if (tempPath.size() < 1) {
+						continue;
+					}
 					p = tempPath.get(1);
 					
 					if (getInfrontPoint().equals(p)) {

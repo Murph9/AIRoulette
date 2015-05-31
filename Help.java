@@ -392,10 +392,17 @@ public class Help {
 			}
         }
         
-        System.out.println(maxWeight);
+        int bombsNeeded = 0;
+        
         
         for (int j = 0; j < trail.size(); j++) {
         	System.out.println(Agent.grid[trail.get(j).y][trail.get(j).x]);
+        	if (Agent.grid[trail.get(j).y][trail.get(j).x] == '*') {
+        		bombsNeeded++;
+        	}
+        	if (bombsNeeded > maxWeight) {
+        		trail.clear();
+        	}
         }
             
         return trail;

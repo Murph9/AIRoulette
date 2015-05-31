@@ -68,7 +68,8 @@ public class Help {
 			v = Q.poll(); //dequeue
 			
 			//process v
-			if (isCharWithinRange(v, in, 0)) {
+			char array[] = {in};
+			if (isCharWithinRange(v, array, 0)) {
 				foundSolution = true;
 				break;
 			}
@@ -141,7 +142,7 @@ public class Help {
 	 * @param avoid list of chars that act as walls in the search
 	 * @return
 	 */
-	public static LinkedList<Point> bfs4Char(Point start, char in, int offset, LinkedList<Character> avoid) {
+	public static LinkedList<Point> bfs4Chars(Point start, char in[], int offset, LinkedList<Character> avoid) {
 		if (avoid == null) {
 			avoid = new LinkedList<Character>(); //just so its search able but useless
 		}
@@ -191,15 +192,19 @@ public class Help {
 		return trail;
 	}
 	
-	private static boolean isCharWithinRange(Point p, char c, int range) {
-		if (range < 1 && Agent.grid[p.y][p.x] == c) { //so its the thing im searching for
-			return true;
+	private static boolean isCharWithinRange(Point p, char c[], int range) {
+		for (int k = 0; k < c.length; k++) {
+			if (range < 1 && Agent.grid[p.y][p.x] == c[k]) { //so its the thing im searching for
+				return true;
+			}
 		}
 		
 		for (int i = -range; i < range+1; i++) {
 			for (int j = -range; j < range+1; j++) {
-				if (c == Agent.grid[p.y+i][p.x+j]) {
-					return true;
+				for (int k = 0; k < c.length; k++) {
+					if (c[k] == Agent.grid[p.y+i][p.x+j]) {
+						return true;
+					}					
 				}
 			}
 		}
@@ -355,7 +360,8 @@ public class Help {
         		System.out.println("NULL");
         	}
         	
-        	if (isCharWithinRange(current.getNode(), to, 0)) break;
+        	char array[] = {to};
+        	if (isCharWithinRange(current.getNode(), array, 0)) break;
         	
         	for (Point p : getNeighbours(current.getNode())) {
 				if (avoid.contains(Agent.grid[p.y][p.x])) {

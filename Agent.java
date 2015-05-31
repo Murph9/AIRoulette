@@ -101,7 +101,7 @@ public class Agent {
 		}
 		
 		fillGrid(view); //fill in grid
-//		print(grid);
+		print(grid);
 		
 		char c;
 		if (path.size() > 0) {
@@ -196,7 +196,7 @@ public class Agent {
 		
 		//go home if you have gold
 		if (hasGold) {
-			out = setPath(new char[]{'H'}, defaultList);
+			out = setPath(new char[]{'H'}, defaultList, 0);
 			if (out) {
 				return;
 			}
@@ -204,7 +204,7 @@ public class Agent {
 		
 		//try to go to gold
 		if (goldPos != null) {
-			out = setPath(new char[]{'g'}, defaultList);
+			out = setPath(new char[]{'g'}, defaultList, 0);
 			if (out) {
 				return;
 			}
@@ -212,7 +212,13 @@ public class Agent {
 		defaultList.remove(new Character('?'));
 		
 		//look for items, then explore ?s you can reach
-		out = setPath(new char[]{'a', 'd', '?'}, defaultList);
+		out = setPath(new char[]{'a', 'd', '?'}, defaultList, 0);
+//		out = setPath(new char[]{'?'}, defaultList);
+		if (out) {
+			return;
+		}
+		
+		out = setPath(new char[]{'?'}, defaultList, 2);
 //		out = setPath(new char[]{'?'}, defaultList);
 		if (out) {
 			return;
@@ -243,13 +249,13 @@ public class Agent {
 
 	
 	
-	private boolean setPath(char searchingFor[], LinkedList<Character> avoid) {
+	private boolean setPath(char searchingFor[], LinkedList<Character> avoid, int offset) {
 		LinkedList<Character> a = null;
 		
 		a = new LinkedList<Character>(avoid);
 		
 		//try for path with out water
-		LinkedList<Point> trail = Help.bfs4Chars(pos, searchingFor, 0, a);
+		LinkedList<Point> trail = Help.bfs4Chars(pos, searchingFor, offset, a);
 		Point temp = getWaterIndex(trail);
 		if (trail.size() > 0) {
 			Point p = trail.get(1);
@@ -273,7 +279,7 @@ public class Agent {
 		}
 		a.remove(new Character('~'));
 	
-		trail = Help.bfs4Chars(pos, searchingFor, 0, a);
+		trail = Help.bfs4Chars(pos, searchingFor, offset, a);
 		if (trail.size() > 0) {
 			
 			Point p = getWaterIndex(trail);
@@ -288,7 +294,7 @@ public class Agent {
 					tempPath = Help.bfs4Point(p, boatSpot, 0, av);
 				} else {
 					char array[] = {'B'};
-					tempPath = Help.bfs4Chars(p, array, 0, av);
+					tempPath = Help.bfs4Chars(p, array, offset, av);
 				}
 				if (tempPath.size() < 1) {
 					return false;

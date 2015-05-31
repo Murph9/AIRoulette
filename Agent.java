@@ -101,7 +101,7 @@ public class Agent {
 		}
 		
 		fillGrid(view); //fill in grid
-		print(grid);
+		//print(grid);
 		
 		char c;
 		if (path.size() > 0) {
@@ -238,8 +238,6 @@ public class Agent {
 		if (hasAxe) defaultList.remove(new Character('T')); //because its not a problem anymore
 		if (inBoat) defaultList.remove(new Character('~'));
 		
-		System.out.println("TRYING TO USE BOMBS");
-		
 		//look to use bombs
 		char temp = getPathThroughWall(new char[]{'g', 'a', 'd', '?'}, defaultList);
 		if (temp != 0) {
@@ -310,7 +308,6 @@ public class Agent {
 				}
 				
 				tempPath.removeFirst();
-				System.out.println(grid[tempPath.getLast().y][tempPath.getLast().x]);
 				path = tempPath;
 				return true;
 			}

@@ -355,10 +355,6 @@ public class Help {
         	
         	closedSet.add(current);
         	
-        	if (current.getNode() == null) {
-        		System.out.println("NULL");
-        	}
-        	
         	char array[] = {to};
         	if (isCharWithinRange(current.getNode(), array, 0)) {
         		trail.add(current.getNode());
@@ -396,7 +392,6 @@ public class Help {
         
         
         for (int j = 0; j < trail.size(); j++) {
-        	System.out.println(Agent.grid[trail.get(j).y][trail.get(j).x]);
         	if (Agent.grid[trail.get(j).y][trail.get(j).x] == '*') {
         		bombsNeeded++;
         	}
